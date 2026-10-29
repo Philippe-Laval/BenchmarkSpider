@@ -30,8 +30,8 @@ namespace BenchmarkSpider.Tests
         [TestMethod]
         public void Load_DevGold_MatchesDevJson()
         {
-            var gold = SpiderGoldParser.Load(Path.Combine(SpiderLoader.SpiderDirectory, "dev_gold.sql"));
-            var examples = SpiderLoader.Load(SpiderLoader.DevJsonPath);
+            var gold = SpiderGoldParser.Load(Path.Combine(SpiderParser.SpiderDirectory, "dev_gold.sql"));
+            var examples = SpiderParser.Load(SpiderParser.DevJsonPath);
 
             Assert.HasCount(examples.Count, gold);
             for (var i = 0; i < gold.Count; i++)
@@ -58,11 +58,11 @@ namespace BenchmarkSpider.Tests
         [TestMethod]
         public void MatchGold_TrainFiles_EveryExampleHasGold()
         {
-            var examples = SpiderLoader.Load(SpiderLoader.TrainSpiderJsonPath)
-                .Concat(SpiderLoader.Load(SpiderLoader.TrainOthersJsonPath))
+            var examples = SpiderParser.Load(SpiderParser.TrainSpiderJsonPath)
+                .Concat(SpiderParser.Load(SpiderParser.TrainOthersJsonPath))
                 .ToList();
 
-            var matches = SpiderGoldParser.MatchGold(examples, Path.Combine(SpiderLoader.SpiderDirectory, "train_gold.sql"));
+            var matches = SpiderGoldParser.MatchGold(examples, Path.Combine(SpiderParser.SpiderDirectory, "train_gold.sql"));
 
             Assert.HasCount(8659, matches);
             Assert.IsEmpty(matches.Where(m => m.Gold is null).Take(5).Select(m => m.Example.Query).ToList());
@@ -71,7 +71,7 @@ namespace BenchmarkSpider.Tests
         [TestMethod]
         public void Load_TrainGold_ParsesAllLines()
         {
-            var gold = SpiderGoldParser.Load(Path.Combine(SpiderLoader.SpiderDirectory, "train_gold.sql"));
+            var gold = SpiderGoldParser.Load(Path.Combine(SpiderParser.SpiderDirectory, "train_gold.sql"));
 
             Assert.HasCount(8659, gold);
             Assert.IsTrue(gold.All(g => g.Sql.Length > 0 && g.DbId.Length > 0));

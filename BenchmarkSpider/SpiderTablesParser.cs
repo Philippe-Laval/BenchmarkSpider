@@ -82,7 +82,7 @@ public class SpiderDatabase
 
 public static class SpiderTablesLoader
 {
-    public static string TablesJsonPath => Path.Combine(SpiderLoader.SpiderDirectory, "tables.json");
+    public static string TablesJsonPath => Path.Combine(SpiderParser.SpiderDirectory, "tables.json");
 
     public static List<SpiderDatabase> Load(string path)
     {

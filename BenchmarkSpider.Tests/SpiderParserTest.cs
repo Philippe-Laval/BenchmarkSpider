@@ -3,7 +3,7 @@ using System.Text.Json;
 namespace BenchmarkSpider.Tests
 {
     [TestClass]
-    public sealed class SpiderModelTest
+    public sealed class SpiderParserTest
     {
         private const string SampleJson = """
         [
@@ -47,7 +47,7 @@ namespace BenchmarkSpider.Tests
             File.WriteAllText(path, json);
             try
             {
-                return SpiderLoader.Load(path);
+                return SpiderParser.Load(path);
             }
             finally
             {
@@ -128,7 +128,7 @@ namespace BenchmarkSpider.Tests
             await File.WriteAllTextAsync(path, SampleJson);
             try
             {
-                var examples = await SpiderLoader.LoadAsync(path);
+                var examples = await SpiderParser.LoadAsync(path);
                 Assert.HasCount(1, examples);
                 Assert.AreEqual("concert_singer", examples[0].DbId);
             }
@@ -157,7 +157,7 @@ namespace BenchmarkSpider.Tests
         [TestMethod]
         public void TestLoad_DevJson()
         {
-            var examples = SpiderLoader.Load(SpiderLoader.DevJsonPath);
+            var examples = SpiderParser.Load(SpiderParser.DevJsonPath);
 
             // Il y a 1034 exemples dans dev.json.
             Assert.HasCount(1034, examples);
@@ -170,7 +170,7 @@ namespace BenchmarkSpider.Tests
         [TestMethod]
         public void TestLoad_TrainSpiderJson()
         {
-            var examples = SpiderLoader.Load(SpiderLoader.TrainSpiderJsonPath);
+            var examples = SpiderParser.Load(SpiderParser.TrainSpiderJsonPath);
 
             // Il y a 7000 exemples dans train_spider.json, mais certains sont des doublons de train_others.json.
             Assert.HasCount(7000, examples);
@@ -180,7 +180,7 @@ namespace BenchmarkSpider.Tests
         [TestMethod]
         public void TestLoad_TrainOthersJson()
         {
-            var examples = SpiderLoader.Load(SpiderLoader.TrainOthersJsonPath);
+            var examples = SpiderParser.Load(SpiderParser.TrainOthersJsonPath);
 
             // Il y a 1659 exemples dans train_others.json, mais certains sont des doublons de train_spider.json.
             // Le nombre exact d'exemples uniques est donc inférieur à 1659.
@@ -191,8 +191,8 @@ namespace BenchmarkSpider.Tests
         [TestMethod]
         public void TestLoad_DevJson_QueriesMatchGoldSql()
         {
-            var examples = SpiderLoader.Load(SpiderLoader.DevJsonPath);
-            var gold = File.ReadAllLines(Path.Combine(SpiderLoader.SpiderDirectory, "dev_gold.sql"))
+            var examples = SpiderParser.Load(SpiderParser.DevJsonPath);
+            var gold = File.ReadAllLines(Path.Combine(SpiderParser.SpiderDirectory, "dev_gold.sql"))
                 .Where(l => !string.IsNullOrWhiteSpace(l))
                 .Select(l => l.Split('\t')[0].Trim())
                 .ToList();

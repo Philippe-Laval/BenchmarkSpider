@@ -83,9 +83,9 @@ namespace BenchmarkSpider.Tests
         public void Load_TablesJson_CoversAllDbIdsOfExamples()
         {
             var known = SpiderTablesLoader.LoadByDbId(SpiderTablesLoader.TablesJsonPath);
-            var examples = SpiderLoader.Load(SpiderLoader.DevJsonPath)
-                .Concat(SpiderLoader.Load(SpiderLoader.TrainSpiderJsonPath))
-                .Concat(SpiderLoader.Load(SpiderLoader.TrainOthersJsonPath));
+            var examples = SpiderParser.Load(SpiderParser.DevJsonPath)
+                .Concat(SpiderParser.Load(SpiderParser.TrainSpiderJsonPath))
+                .Concat(SpiderParser.Load(SpiderParser.TrainOthersJsonPath));
 
             var missing = examples.Select(e => e.DbId).Distinct().Where(id => !known.ContainsKey(id)).ToList();
 
