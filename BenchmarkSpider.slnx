@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="BenchmarkSpider.Tests/BenchmarkSpider.Tests.csproj" />
+  <Project Path="BenchmarkSpider/BenchmarkSpider.csproj" />
+</Solution>
