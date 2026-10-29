@@ -3,8 +3,7 @@ using System.Text;
 
 namespace BenchmarkSpider;
 
-// C# port of spider/evaluation.py (exact / partial matching).
-// Execution accuracy ("exec") is not ported because it requires SQLite access.
+// C# port of spider/evaluation.py (exact / partial matching and execution accuracy).
 
 public record PartialScore(double Acc, double Rec, double F1, int LabelTotal, int PredTotal);
 
@@ -21,6 +20,7 @@ public class LevelScores
 {
     public int Count { get; set; }
     public double Exact { get; set; }
+    public double Exec { get; set; }
     public Dictionary<string, PartialAggregate> Partial { get; } =
         SpiderEvaluator.PartialTypes.ToDictionary(t => t, _ => new PartialAggregate());
 }
@@ -32,9 +32,10 @@ public class SpiderEvalResult
     public Dictionary<string, LevelScores> Scores { get; } = SpiderEvaluator.Levels.ToDictionary(l => l, _ => new LevelScores());
     public List<SpiderEvalEntry> Entries { get; } = [];
     public int EvalErrorCount { get; set; }
+    public bool ExecEvaluated { get; set; }
 }
 
-public class SpiderEvaluator
+public partial class SpiderEvaluator
 {
     public static readonly string[] Levels = ["easy", "medium", "hard", "extra", "all"];
 
@@ -497,10 +498,10 @@ public class SpiderEvaluator
 
     private static ParsedSql EmptySql() => Make(new SelectClause(false, []), new FromClause([], []), [], [], [], null, null, null, null, null);
 
-    public static SpiderEvalResult Evaluate(IEnumerable<(string PredSql, string GoldSql, string DbId)> items, IReadOnlyDictionary<string, SpiderDatabase> dbs, Action<string>? log = null)
+    public static SpiderEvalResult Evaluate(IEnumerable<(string PredSql, string GoldSql, string DbId)> items, IReadOnlyDictionary<string, SpiderDatabase> dbs, Action<string>? log = null, string? dbDir = null)
     {
         var evaluator = new SpiderEvaluator();
-        var result = new SpiderEvalResult();
+        var result = new SpiderEvalResult { ExecEvaluated = dbDir is not null };
         var scores = result.Scores;
         var kmaps = new Dictionary<string, Dictionary<string, string>>();
 
@@ -532,6 +533,12 @@ public class SpiderEvaluator
             gSql = RebuildSqlCol(gValid, RebuildSqlVal(gSql), kmap)!;
             var pValid = BuildValidColUnits(pSql.From.TableUnits, schema);
             pSql = RebuildSqlCol(pValid, RebuildSqlVal(pSql), kmap)!;
+
+            if (dbDir is not null && EvalExecMatch(Path.Combine(dbDir, dbId, dbId + ".sqlite"), pStr, gStr, pSql, gSql))
+            {
+                scores[hardness].Exec += 1;
+                scores["all"].Exec += 1;
+            }
 
             var exact = evaluator.EvalExactMatch(pSql, gSql);
             var partial = evaluator.PartialScores!;
@@ -573,6 +580,7 @@ public class SpiderEvaluator
             if (s.Count == 0)
                 continue;
             s.Exact /= s.Count;
+            s.Exec /= s.Count;
             foreach (var type in PartialTypes)
             {
                 var agg = s.Partial[type];
@@ -588,7 +596,7 @@ public class SpiderEvaluator
     /// Same inputs as evaluation.py: gold file ("sql\tdb_id" per line), prediction file (first tab separated column per line)
     /// and tables.json.
     /// </summary>
-    public static SpiderEvalResult Evaluate(string goldPath, string predictPath, string tablesPath, Action<string>? log = null)
+    public static SpiderEvalResult Evaluate(string goldPath, string predictPath, string tablesPath, Action<string>? log = null, string? dbDir = null)
     {
         static List<string[]> Read(string path) => File.ReadAllLines(path)
             .Select(l => l.Trim()).Where(l => l.Length > 0).Select(l => l.Split('\t')).ToList();
@@ -597,7 +605,7 @@ public class SpiderEvaluator
         var pred = Read(predictPath);
         var dbs = SpiderTablesLoader.LoadByDbId(tablesPath);
         var items = pred.Zip(gold, (p, g) => (p[0], g[0], g[1]));
-        return Evaluate(items, dbs, log);
+        return Evaluate(items, dbs, log, dbDir);
     }
 
     public static string FormatScores(SpiderEvalResult result)
@@ -612,6 +620,13 @@ public class SpiderEvaluator
 
         sb.AppendLine("".PadRight(20) + " " + string.Join(" ", Levels.Select(l => l.PadRight(20))));
         Row("count", s => s.Count.ToString(CultureInfo.InvariantCulture).PadRight(20));
+
+        if (result.ExecEvaluated)
+        {
+            sb.AppendLine();
+            sb.AppendLine("====================== EXECUTION ACCURACY =====================");
+            Row("execution", s => F(s.Exec));
+        }
 
         sb.AppendLine();
         sb.AppendLine("====================== EXACT MATCHING ACCURACY =====================");

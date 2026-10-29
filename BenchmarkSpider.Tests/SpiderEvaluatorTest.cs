@@ -36,6 +36,23 @@ namespace BenchmarkSpider.Tests
         }
 
         [TestMethod]
+        public void Evaluate_ExecutionAccuracy_ConcertSinger()
+        {
+            var dbs = SpiderTablesLoader.LoadByDbId(SpiderTablesLoader.TablesJsonPath);
+            var dbDir = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(SpiderTablesLoader.TablesJsonPath)!, "database"));
+            Assert.IsTrue(Directory.Exists(dbDir), dbDir);
+
+            var items = new[]
+            {
+                ("SELECT count(*) FROM singer", "SELECT count(*) FROM singer", "concert_singer"),
+                ("SELECT name FROM singer", "SELECT count(*) FROM singer", "concert_singer"),
+            };
+            var result = SpiderEvaluator.Evaluate(items, dbs, null, dbDir);
+
+            Assert.AreEqual(0.5, result.Scores["all"].Exec, 1e-9);
+        }
+
+        [TestMethod]
         public void Evaluate_InvalidPrediction_CountsAsError()
         {
             var dbs = SpiderTablesLoader.LoadByDbId(SpiderTablesLoader.TablesJsonPath);

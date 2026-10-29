@@ -109,7 +109,42 @@ public class SqlSchema
         return new SqlSchema(tables);
     }
 
-    /// <summary>Equivalent of get_schema_from_json: [{ "table": ..., "col_data": [{ "column_name": ... }] }].</summary>
+    /// <summary>Builds the schema directly from a SQLite database file (equivalent of get_schema).</summary>
+    public static SqlSchema FromSqlite(string dbPath)
+    {
+        var tables = new Dictionary<string, List<string>>();
+        var connectionString = new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder
+        {
+            DataSource = dbPath,
+            Mode = Microsoft.Data.Sqlite.SqliteOpenMode.ReadOnly,
+        }.ToString();
+
+        using var conn = new Microsoft.Data.Sqlite.SqliteConnection(connectionString);
+        conn.Open();
+
+        var tableNames = new List<string>();
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = "SELECT name FROM sqlite_master WHERE type='table';";
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                tableNames.Add(reader.GetString(0).ToLowerInvariant());
+        }
+
+        foreach (var table in tableNames)
+        {
+            var columns = new List<string>();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = $"PRAGMA table_info({table})";
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                columns.Add(reader.GetString(1).ToLowerInvariant());
+            tables[table] = columns;
+        }
+        return new SqlSchema(tables);
+    }
+
+    /// <summary>Equivalent of get_schema_from_json
     public static SqlSchema FromJson(string path)
     {
         using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(path));
@@ -118,7 +153,7 @@ public class SqlSchema
         {
             var table = entry.GetProperty("table").GetString()!.ToLowerInvariant();
             tables[table] = entry.GetProperty("col_data").EnumerateArray()
-                .Select(c => c.GetProperty("column_name").GetString()!.ToLowerInvariant())
+                .Select(col => col.GetProperty("column_name").GetString()!.ToLowerInvariant())
                 .ToList();
         }
         return new SqlSchema(tables);
