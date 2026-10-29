@@ -47,7 +47,7 @@ public record ColumnValue(ColUnit ColUnit) : SqlValue;
 public abstract record ConditionItem;
 
 /// <summary>cond_unit: (not_op, op_id, val_unit, val1, val2)</summary>
-public record CondUnit(bool NotOp, int OpId, ValUnit ValUnit, SqlValue Val1, SqlValue? Val2) : ConditionItem;
+public record CondUnit(bool NotOp, int OpId, ValUnit ValUnit, SqlValue? Val1, SqlValue? Val2) : ConditionItem;
 public record ConditionConnector(string Operator) : ConditionItem;
 
 public class ParsedSql
