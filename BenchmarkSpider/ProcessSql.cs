@@ -249,6 +249,20 @@ public static class SqlParser
         return ParseSql(toks, 0, tablesWithAlias, schema).Sql;
     }
 
+    private static readonly HashSet<string> NonOperandWords = new(
+        [.. ClauseKeywords, .. JoinKeywords, .. WhereOps, .. CondOps, "by", "having", "distinct", "all", "when", "then", "else"]);
+
+    /// <summary>True when the last token is an operand, so that a following '-' is a subtraction rather than a sign.</summary>
+    private static bool EndsOperand(List<string> toks)
+    {
+        if (toks.Count == 0)
+            return false;
+        var last = toks[^1];
+        if (last == ")" || last[0] == '"')
+            return true;
+        return (char.IsLetterOrDigit(last[0]) || last[0] == '_' || last[0] == '.') && !NonOperandWords.Contains(last);
+    }
+
     /// <summary>
     /// Replacement of the NLTK based tokenizer: string values are kept as one token (with their
     /// quotes and case), everything else is lower-cased.
@@ -274,9 +288,12 @@ public static class SqlParser
                 toks.Add(text.Substring(i, end - i + 1));
                 i = end + 1;
             }
-            else if (char.IsLetterOrDigit(c) || c == '_' || c == '.')
+            else if (char.IsLetterOrDigit(c) || c == '_' || c == '.'
+                || (c == '-' && i + 1 < text.Length && (char.IsDigit(text[i + 1]) || text[i + 1] == '.')
+                    && !EndsOperand(toks)))
             {
                 var start = i;
+                i++;
                 while (i < text.Length && (char.IsLetterOrDigit(text[i]) || text[i] == '_' || text[i] == '.'))
                     i++;
                 toks.Add(text[start..i].ToLowerInvariant());

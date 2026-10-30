@@ -23,6 +23,32 @@ namespace BenchmarkSpider.Tests
         }
 
         [TestMethod]
+        public void Tokenize_KeepsMinusInNumbers()
+        {
+            var toks = SqlParser.Tokenize("SELECT name FROM airports WHERE elevation BETWEEN -50 AND 50");
+
+            CollectionAssert.AreEqual(
+                new[] { "select", "name", "from", "airports", "where", "elevation", "between", "-50", "and", "50" },
+                toks);
+        }
+
+        [TestMethod]
+        public void Tokenize_MinusAfterOperandIsSubtraction()
+        {
+            CollectionAssert.AreEqual(
+                new[] { "a", "-", "1" },
+                SqlParser.Tokenize("a -1"));
+
+            CollectionAssert.AreEqual(
+                new[] { "select", "age", "-", "1", "from", "singer" },
+                SqlParser.Tokenize("SELECT age -1 FROM singer"));
+
+            CollectionAssert.AreEqual(
+                new[] { "(", "a", ")", "-", "1" },
+                SqlParser.Tokenize("(a) -1"));
+        }
+
+        [TestMethod]
         public void GetSql_SimpleSelectWithWhereOrderLimit()
         {
             ParsedSql sql = SqlParser.GetSql(Schema(), "SELECT name FROM singer WHERE age > 30 ORDER BY age DESC LIMIT 3");
@@ -188,5 +214,47 @@ namespace BenchmarkSpider.Tests
         // Round trip through SpiderSql turns missing members into JsonValueKind.Undefined; nothing to normalise
         // beyond that, so this is the identity (kept as a seam for future differences).
         private static JsonElement Normalize(JsonElement e) => e;
+
+
+        [TestMethod]
+        public void TestGetSql_DevGold()
+        {
+            var dbs = SpiderTablesLoader.LoadByDbId(SpiderTablesLoader.TablesJsonPath);
+
+            List<SpiderGoldEntry> goldList = SpiderGoldParser.Load(Path.Combine(SpiderParser.SpiderDirectory, "dev_gold.sql"));
+            foreach (var gold in goldList)
+            {
+                var db = dbs[gold.DbId];
+                var parsed = SqlParser.GetSql(SqlSchema.FromDatabase(db), gold.Sql);
+                Assert.IsNotNull(parsed, $"Failed to parse: {gold.Sql} for db {gold.DbId}");
+            }
+        }
+
+        [TestMethod]
+        public void TestGetSql_TrainGold()
+        {
+            var dbs = SpiderTablesLoader.LoadByDbId(SpiderTablesLoader.TablesJsonPath);
+
+            List<SpiderGoldEntry> goldList = SpiderGoldParser.Load(Path.Combine(SpiderParser.SpiderDirectory, "train_gold.sql"));
+            var failures = new List<string>();
+
+            foreach (var gold in goldList)
+            {
+                try
+                {
+                    var db = dbs[gold.DbId];
+                    var parsed = SqlParser.GetSql(SqlSchema.FromDatabase(db), gold.Sql);
+                }
+                catch (Exception ex)
+                {
+                    failures.Add($"{gold.DbId}: {gold.Sql} -> {ex.GetType().Name}: {ex.Message}");
+                }
+            }
+
+            if (failures.Count > 0)
+            {
+                Assert.Fail($"Failures:\n{string.Join("\n", failures)}");
+            }
+        }
     }
 }
