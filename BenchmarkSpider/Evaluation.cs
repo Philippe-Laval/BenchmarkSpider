@@ -27,22 +27,52 @@ public class LevelScores
 
 public record SpiderEvalEntry(string PredictSql, string GoldSql, string Hardness, bool Exact, IReadOnlyDictionary<string, PartialScore> Partial);
 
+/// <summary>
+/// Represents the aggregated outcome of a Spider evaluation run, including per-level scores, collected entries, error
+/// count, and execution-evaluation state.
+/// </summary>
+/// <remarks>Score containers are initialized for all evaluator levels.</remarks>
 public class SpiderEvalResult
 {
     public Dictionary<string, LevelScores> Scores { get; } = SpiderEvaluator.Levels.ToDictionary(l => l, _ => new LevelScores());
     public List<SpiderEvalEntry> Entries { get; } = [];
+    /// <summary>
+    /// Nombre d’erreurs d’évaluation.
+    /// </summary>
     public int EvalErrorCount { get; set; }
+    /// <summary>
+    /// Indique si l’exécution de la requete SQL a été évaluée.
+    /// </summary>
     public bool ExecEvaluated { get; set; }
 }
 
+/// <summary>
+/// Évalue des requêtes SQL de type Spider en comparant des prédictions à des requêtes de référence, avec calcul des
+/// scores de correspondance exacte, de correspondance partielle et, optionnellement, d’exécution.
+/// </summary>
+/// <remarks>Fournit aussi des utilitaires de normalisation des requêtes (suppression des valeurs littérales,
+/// harmonisation des colonnes via clés étrangères), de classification de difficulté et de mise en forme des résultats
+/// agrégés par niveau.</remarks>
 public partial class SpiderEvaluator
 {
+    /// <summary>
+    /// Niveaux de difficulté de la requête SQL.
+    /// </summary>
     public static readonly string[] Levels = ["easy", "medium", "hard", "extra", "all"];
 
+    /// <summary>
+    /// Catégories de requêtes SQL partielles utilisées pour la classification.
+    /// </summary>
     public static readonly string[] PartialTypes =
         ["select", "select(no AGG)", "where", "where(no OP)", "group(no Having)", "group", "order", "and/or", "IUEN", "keywords"];
 
+    /// <summary>
+    /// Index de l’opérateur SQL <c>LIKE</c> dans <c>SqlParser.WhereOps</c>.
+    /// </summary>
     private static readonly int LikeOp = Array.IndexOf(SqlParser.WhereOps, "like");
+    /// <summary>
+    /// Index de l’opérateur SQL <c>IN</c> dans <c>SqlParser.WhereOps</c>.
+    /// </summary>
     private static readonly int InOp = Array.IndexOf(SqlParser.WhereOps, "in");
 
     public IReadOnlyDictionary<string, PartialScore>? PartialScores { get; private set; }
@@ -226,6 +256,12 @@ public partial class SpiderEvaluator
         return (lt1 + lt2 + lt3, pt1 + pt2 + pt3, c1 + c2 + c3);
     }
 
+    /// <summary>
+    /// Extrait les mots-clés SQL présents dans une requête analysée 
+    /// à partir de ses clauses, connecteurs et opérateurs conditionnels.
+    /// </summary>
+    /// <param name="sql">Requête SQL analysée à inspecter.</param>
+    /// <returns>Ensemble des mots-clés détectés, sans doublons.</returns>
     private static HashSet<string> GetKeywords(ParsedSql sql)
     {
         var res = new HashSet<string>();
@@ -251,6 +287,13 @@ public partial class SpiderEvaluator
         return res;
     }
 
+    /// <summary>
+    /// Évalue les mots-clés de deux requêtes SQL analysées et calcule leurs effectifs ainsi que leur recouvrement.
+    /// </summary>
+    /// <param name="pred">Requête SQL analysée prédite.</param>
+    /// <param name="label">Requête SQL analysée de référence.</param>
+    /// <returns>Un tuple contenant, dans l’ordre, le nombre de mots-clés de <paramref name="label"/>, le nombre de mots-clés de
+    /// <paramref name="pred"/>, puis le nombre de mots-clés de <paramref name="pred"/> présents dans <paramref name="label"/>.</returns>
     private static (int, int, int) EvalKeywords(ParsedSql pred, ParsedSql label)
     {
         var p = GetKeywords(pred);
@@ -498,7 +541,27 @@ public partial class SpiderEvaluator
 
     private static ParsedSql EmptySql() => Make(new SelectClause(false, []), new FromClause([], []), [], [], [], null, null, null, null, null);
 
-    public static SpiderEvalResult Evaluate(IEnumerable<(string PredSql, string GoldSql, string DbId)> items, IReadOnlyDictionary<string, SpiderDatabase> dbs, Action<string>? log = null, string? dbDir = null)
+    /// <summary>
+    /// Évalue un ensemble de requêtes SQL prédites par rapport aux requêtes de référence et calcule des métriques
+    /// agrégées par niveau de difficulté et globalement.
+    /// </summary>
+    /// <remarks>Lorsque <c>dbDir</c> est <see langword="null"/>, les scores d’exécution ne sont pas évalués.
+    /// Les requêtes prédites invalides sont comptées comme erreurs d’évaluation et remplacées par une représentation
+    /// SQL vide pour poursuivre le calcul des métriques.</remarks>
+    /// <param name="items">Séquence d’éléments à évaluer, chacun contenant la requête prédite, la requête de référence et l’identifiant de
+    /// base de données cible.</param>
+    /// <param name="dbs">Dictionnaire des schémas de bases de données indexés par identifiant, utilisé pour l’analyse et la normalisation
+    /// des requêtes.</param>
+    /// <param name="log">Action de journalisation optionnelle appelée pour signaler les erreurs d’évaluation et, en cas de
+    /// non-correspondance exacte, les requêtes comparées.</param>
+    /// <param name="dbDir">Chemin optionnel vers le répertoire contenant les fichiers SQLite par base de données pour activer l’évaluation
+    /// par exécution.</param>
+    /// <returns>Un objet <c>SpiderEvalResult</c> contenant les scores exacts, partiels et d’exécution agrégés, ainsi que le
+    /// détail par entrée et le nombre d’erreurs d’analyse.</returns>
+    public static SpiderEvalResult Evaluate(IEnumerable<(string PredSql, string GoldSql, string DbId)> items, 
+        IReadOnlyDictionary<string, SpiderDatabase> dbs, 
+        Action<string>? log = null, 
+        string? dbDir = null)
     {
         var evaluator = new SpiderEvaluator();
         var result = new SpiderEvalResult { ExecEvaluated = dbDir is not null };

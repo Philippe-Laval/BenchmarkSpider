@@ -80,6 +80,11 @@ public class SpiderDatabase
     }
 }
 
+/// <summary>
+/// Fournit des méthodes utilitaires pour charger les métadonnées des bases Spider à partir d’un fichier JSON.
+/// </summary>
+/// <remarks>Inclut le chargement synchrone et asynchrone, ainsi qu’une projection en dictionnaire indexé par
+/// identifiant de base de données.</remarks>
 public static class SpiderTablesLoader
 {
     public static string TablesJsonPath => Path.Combine(SpiderParser.SpiderDirectory, "tables.json");
