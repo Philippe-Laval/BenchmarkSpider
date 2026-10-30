@@ -704,14 +704,14 @@ public static class SqlParser
             else
             {
                 if (idx < len && toks[idx] == "join")
-                    idx++;
+                    idx++;   //skip join
                 (idx, var tableId, var tableName) = ParseTableUnit(toks, idx, tablesWithAlias, schema);
                 tableUnits.Add(new TableUnit(TableTypeTableUnit, tableId, null));
                 defaultTables.Add(tableName);
             }
             if (idx < len && toks[idx] == "on")
             {
-                idx++;
+                idx++;      // skip on
                 (idx, var thisConds) = ParseCondition(toks, idx, tablesWithAlias, schema, defaultTables);
                 if (conds.Count > 0)
                     conds.Add(new ConditionConnector("and"));
@@ -730,6 +730,16 @@ public static class SqlParser
         return (idx, tableUnits, conds, defaultTables);
     }
 
+    /// <summary>
+    /// Analyse la clause WHERE à partir de l’index spécifié dans une liste de jetons SQL.
+    /// </summary>
+    /// <param name="toks">Jetons SQL à analyser.</param>
+    /// <param name="startIdx">Index auquel commencer la recherche de la clause WHERE.</param>
+    /// <param name="tablesWithAlias">Association des alias de tables à leurs noms de table.</param>
+    /// <param name="schema">Schéma SQL utilisé pour la résolution des colonnes et des tables.</param>
+    /// <param name="defaultTables">Tables par défaut à utiliser lorsqu’aucun alias explicite n’est fourni.</param>
+    /// <returns>Un tuple contenant l’index atteint et la liste des conditions analysées. Si aucun jeton WHERE n’est présent à
+    /// l’index de départ, retourne l’index initial et une liste vide.</returns>
     private static (int Idx, List<ConditionItem> Conds) ParseWhere(IReadOnlyList<string> toks, int startIdx,
         IReadOnlyDictionary<string, string> tablesWithAlias, SqlSchema schema, IReadOnlyList<string> defaultTables)
     {
@@ -739,6 +749,18 @@ public static class SqlParser
         return ParseCondition(toks, startIdx + 1, tablesWithAlias, schema, defaultTables);
     }
 
+    /// <summary>
+    /// Analyse une clause GROUP BY à partir d’un index de jetons SQL et extrait les unités de colonne.
+    /// </summary>
+    /// <remarks>Retourne l’index initial et une liste vide si aucune clause GROUP BY n’est
+    /// présente.</remarks>
+    /// <param name="toks">Liste ordonnée des jetons SQL à analyser.</param>
+    /// <param name="startIdx">Index de départ dans <paramref name="toks"/>.</param>
+    /// <param name="tablesWithAlias">Dictionnaire de correspondance entre alias et noms de table.</param>
+    /// <param name="schema">Schéma SQL utilisé pour la résolution des colonnes.</param>
+    /// <param name="defaultTables">Tables par défaut utilisées quand aucune table n’est explicitement qualifiée.</param>
+    /// <returns>Un tuple contenant l’index du prochain jeton à lire et la liste des unités de colonne trouvées dans la clause
+    /// GROUP BY.</returns>
     private static (int Idx, List<ColUnit> ColUnits) ParseGroupBy(IReadOnlyList<string> toks, int startIdx,
         IReadOnlyDictionary<string, string> tablesWithAlias, SqlSchema schema, IReadOnlyList<string> defaultTables)
     {
@@ -766,6 +788,18 @@ public static class SqlParser
         return (idx, colUnits);
     }
 
+    /// <summary>
+    /// Analyse une clause ORDER BY à partir d’un index donné dans une liste de jetons SQL.
+    /// </summary>
+    /// <remarks>L’analyse attend le mot-clé <c>by</c> après <c>order</c> et s’arrête à la rencontre d’une
+    /// autre clause, d’une parenthèse fermante ou d’un point-virgule.</remarks>
+    /// <param name="toks">Liste des jetons SQL à analyser.</param>
+    /// <param name="startIdx">Index de départ de l’analyse dans la liste des jetons.</param>
+    /// <param name="tablesWithAlias">Mapping des alias de tables vers leurs noms de table.</param>
+    /// <param name="schema">Schéma SQL utilisé pour résoudre et valider les références.</param>
+    /// <param name="defaultTables">Tables par défaut à utiliser pour la résolution des colonnes non qualifiées.</param>
+    /// <returns>Un tuple contenant l’index atteint après l’analyse et la clause ORDER BY construite ; la valeur de clause est
+    /// <c>null</c> si aucun mot-clé <c>order</c> n’est présent à l’index de départ.</returns>
     private static (int Idx, OrderByClause? Value) ParseOrderBy(IReadOnlyList<string> toks, int startIdx,
         IReadOnlyDictionary<string, string> tablesWithAlias, SqlSchema schema, IReadOnlyList<string> defaultTables)
     {
@@ -799,6 +833,16 @@ public static class SqlParser
         return (idx, new OrderByClause(orderType, valUnits));
     }
 
+    /// <summary>
+    /// Analyse une clause HAVING à partir d’un index donné dans une liste de jetons SQL.
+    /// </summary>
+    /// <param name="toks">Liste des jetons SQL à analyser.</param>
+    /// <param name="startIdx">Index de départ de l’analyse dans la liste des jetons.</param>
+    /// <param name="tablesWithAlias">Mapping des alias de tables vers leurs noms de table.</param>
+    /// <param name="schema">Schéma SQL utilisé pour résoudre et valider les références.</param>
+    /// <param name="defaultTables">Tables par défaut à utiliser pour la résolution des colonnes non qualifiées.</param>
+    /// <returns>Un tuple contenant l’index atteint après l’analyse et la liste des conditions de la clause HAVING ; la valeur de clause est
+    /// <c>null</c> si aucun mot-clé <c>having</c> n’est présent à l’index de départ.</returns>
     private static (int Idx, List<ConditionItem> Conds) ParseHaving(IReadOnlyList<string> toks, int startIdx,
         IReadOnlyDictionary<string, string> tablesWithAlias, SqlSchema schema, IReadOnlyList<string> defaultTables)
     {
@@ -808,6 +852,13 @@ public static class SqlParser
         return ParseCondition(toks, startIdx + 1, tablesWithAlias, schema, defaultTables);
     }
 
+    /// <summary>
+    /// Analyse une clause <c>limit</c> optionnelle à partir d’un index donné dans une liste de jetons.
+    /// </summary>
+    /// <param name="toks">Liste des jetons à analyser.</param>
+    /// <param name="startIdx">Index de départ de l’analyse dans <paramref name="toks"/>.</param>
+    /// <returns>Un tuple contenant l’index suivant après la clause <c>limit</c> et la valeur limite analysée ; si aucune clause
+    /// <c>limit</c> n’est présente, retourne l’index d’origine et <see langword="null"/>.</returns>
     private static (int Idx, int? Limit) ParseLimit(IReadOnlyList<string> toks, int startIdx)
     {
         if (startIdx < toks.Count && toks[startIdx] == "limit")
@@ -820,6 +871,12 @@ public static class SqlParser
         return (startIdx, null);
     }
 
+    /// <summary>
+    /// Ignore les points-virgules consécutifs à partir d’un index donné dans une liste de jetons.
+    /// </summary>
+    /// <param name="toks">Liste des jetons à analyser.</param>
+    /// <param name="startIdx">Index de départ de l’analyse dans <paramref name="toks"/>.</param>
+    /// <returns>L’index du premier jeton qui n’est pas un point-virgule après <paramref name="startIdx"/>.</returns>
     private static int SkipSemicolon(IReadOnlyList<string> toks, int startIdx)
     {
         var idx = startIdx;
@@ -828,6 +885,15 @@ public static class SqlParser
         return idx;
     }
 
+    /// <summary>
+    /// Analyse une requête SQL tokenisée à partir d’un index donné et construit un objet <c>ParsedSql</c> incluant les
+    /// clauses principales et les opérations d’ensemble (<c>INTERSECT</c>, <c>UNION</c>, <c>EXCEPT</c>).
+    /// </summary>
+    /// <param name="toks">Séquence de jetons SQL à analyser.</param>
+    /// <param name="startIdx">Index du jeton où commence l’analyse.</param>
+    /// <param name="tablesWithAlias">Dictionnaire des alias de tables disponibles dans le contexte courant.</param>
+    /// <param name="schema">Schéma SQL utilisé pour la résolution et la validation des références.</param>
+    /// <returns>Un tuple contenant l’index du prochain jeton non consommé et la représentation structurée SQL analysée.</returns>
     private static (int Idx, ParsedSql Sql) ParseSql(IReadOnlyList<string> toks, int startIdx,
         IReadOnlyDictionary<string, string> tablesWithAlias, SqlSchema schema)
     {
