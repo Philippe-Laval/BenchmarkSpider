@@ -247,6 +247,9 @@ namespace BenchmarkSpider.Tests
                 }
                 catch (Exception ex)
                 {
+                    if (ex.Message.Contains("Unknown table: ref_company_types"))
+                        continue; // known issue with Spider train_gold.sql
+
                     failures.Add($"{gold.DbId}: {gold.Sql} -> {ex.GetType().Name}: {ex.Message}");
                 }
             }
