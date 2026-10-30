@@ -48,6 +48,8 @@ namespace BenchmarkSpider.Tests
             };
             var gold = new List<SpiderGoldEntry> { new("SELECT a FROM t", "db1") };
 
+            // The first example matches the gold entry, ignoring case, whitespace, and the trailing semicolon.
+            // The second example does not match any gold entry.
             var matches = SpiderGoldParser.MatchGold(examples, gold);
 
             Assert.HasCount(2, matches);

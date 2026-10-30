@@ -79,6 +79,13 @@ public class SqlSchema
         IdMap = Map(tables);
     }
 
+    /// <summary>
+    /// Construit un dictionnaire d’identifiants normalisés pour les tables et colonnes du schéma, avec une entrée
+    /// générique pour tous les éléments.
+    /// </summary>
+    /// <param name="schema">Schéma source associant chaque table à sa liste de colonnes.</param>
+    /// <returns>Dictionnaire où les clés sont les noms de table et les paires table.colonne en minuscules, et les valeurs sont
+    /// leurs identifiants encadrés par des doubles tirets bas.</returns>
     private static Dictionary<string, string> Map(IReadOnlyDictionary<string, List<string>> schema)
     {
         var idMap = new Dictionary<string, string> { ["*"] = "__all__" };
@@ -95,7 +102,7 @@ public class SqlSchema
         return idMap;
     }
 
-    /// <summary>Builds the schema of a database described in tables.json (equivalent of get_schema).</summary>
+    /// <summary>Construit le schéma d'une base de données décrite dans tables.json (équivalent de get_schema).</summary>
     public static SqlSchema FromDatabase(SpiderDatabase db)
     {
         var tables = new Dictionary<string, List<string>>();
@@ -162,27 +169,73 @@ public class SqlSchema
 
 public static class SqlParser
 {
+    /// <summary>
+    /// Mots-clés de clauses SQL reconnus pour l’analyse des requêtes (select, from, where, group, order, limit, intersect, union, except).
+    /// </summary>
     public static readonly string[] ClauseKeywords = ["select", "from", "where", "group", "order", "limit", "intersect", "union", "except"];
+    /// <summary>
+    /// Mots-clés utilisés pour les jointures (join, on, as).
+    /// </summary>
     public static readonly string[] JoinKeywords = ["join", "on", "as"];
+    /// <summary>
+    /// Opérateurs pris en charge pour les clauses WHERE (not, between, =, >, <, >=, <=, !=, in, like, is, exists).
+    /// </summary>
     public static readonly string[] WhereOps = ["not", "between", "=", ">", "<", ">=", "<=", "!=", "in", "like", "is", "exists"];
+    /// <summary>
+    /// Noms des opérations unitaires prises en charge (none, -, +, *, /).
+    /// </summary>
     public static readonly string[] UnitOps = ["none", "-", "+", "*", "/"];
+    /// <summary>
+    /// Noms des opérations d’agrégation prises en charge (none, max, min, count, sum, avg).
+    /// </summary>
     public static readonly string[] AggOps = ["none", "max", "min", "count", "sum", "avg"];
+    /// <summary>
+    /// Représente les opérateurs conditionnels pris en charge (and et or).
+    /// </summary>
     public static readonly string[] CondOps = ["and", "or"];
+    /// <summary>
+    /// Opérateurs ensemblistes SQL pris en charge (intersect, union, except).
+    /// </summary>
     public static readonly string[] SqlOps = ["intersect", "union", "except"];
+    /// <summary>
+    /// Représente les opérations de tri prises en charge (desc et asc).
+    /// </summary>
     public static readonly string[] OrderOps = ["desc", "asc"];
 
     public const string TableTypeSql = "sql";
     public const string TableTypeTableUnit = "table_unit";
 
+    /// <summary>
+    /// Vérifie qu'une condition est vraie.
+    /// </summary>
+    /// <param name="condition">Condition à valider.</param>
+    /// <param name="message">Message de l'exception levée si la condition est fausse.</param>
+    /// <exception cref="SqlParseException">Levée lorsque la condition est fausse.</exception>
     private static void Check(bool condition, string message)
     {
         if (!condition)
             throw new SqlParseException(message);
     }
 
+    /// <summary>
+    /// Retourne le jeton à l’index spécifié dans la liste.
+    /// </summary>
+    /// <param name="toks">Liste en lecture seule des jetons.</param>
+    /// <param name="idx">Index du jeton à récupérer.</param>
+    /// <returns>Le jeton situé à l’index spécifié.</returns>
+    /// <exception cref="SqlParseException">Levée lorsque l’index est en dehors des limites de la liste.</exception>
     private static string Tok(IReadOnlyList<string> toks, int idx)
         => idx >= 0 && idx < toks.Count ? toks[idx] : throw new SqlParseException($"Unexpected end of tokens at index {idx}.");
 
+    /// <summary>
+    /// Obtient la valeur associée à une clé dans un dictionnaire en lecture seule.
+    /// </summary>
+    /// <typeparam name="TValue">Type des valeurs stockées dans le dictionnaire.</typeparam>
+    /// <param name="dict">Dictionnaire en lecture seule contenant les valeurs à rechercher.</param>
+    /// <param name="key">Clé de la valeur à récupérer.</param>
+    /// <param name="what">Nom de l’élément recherché utilisé dans le message d’erreur.</param>
+    /// <returns>Valeur associée à la clé spécifiée.</returns>
+    /// <exception cref="SqlParseException">Levée lorsque la clé spécifiée est introuvable dans le dictionnaire.</exception>
     private static TValue Lookup<TValue>(IReadOnlyDictionary<string, TValue> dict, string key, string what)
         => dict.TryGetValue(key, out var value) ? value : throw new SqlParseException($"Unknown {what}: {key}");
 
@@ -198,7 +251,8 @@ public static class SqlParser
 
     /// <summary>
     /// Replacement of the NLTK based tokenizer: string values are kept as one token (with their
-    /// quotes and case), everything else is lower-cased. Operators like !=, >=, &lt;= are merged.
+    /// quotes and case), everything else is lower-cased.
+    /// Operators like !=, >=, &lt;= are merged.
     /// </summary>
     public static List<string> Tokenize(string query)
     {
@@ -252,12 +306,14 @@ public static class SqlParser
         var alias = new Dictionary<string, string>();
         for (var idx = 0; idx < toks.Count; idx++)
         {
+            // aa as bb => alias[bb] = aa
             if (toks[idx] == "as")
                 alias[Tok(toks, idx + 1)] = Tok(toks, idx - 1);
         }
         return alias;
     }
-
+    
+    /// <summary>Get all tables with their aliases.</summary>
     public static Dictionary<string, string> GetTablesWithAlias(IReadOnlyDictionary<string, List<string>> schema, IReadOnlyList<string> toks)
     {
         var tables = ScanAlias(toks);
@@ -269,13 +325,27 @@ public static class SqlParser
         return tables;
     }
 
+    /// <summary>
+    /// Analyse un jeton de colonne SQL à partir d’un index donné et résout son identifiant de colonne dans le schéma.
+    /// </summary>
+    /// <param name="toks">Liste des jetons SQL à lire.</param>
+    /// <param name="startIdx">Index du jeton à analyser.</param>
+    /// <param name="tablesWithAlias">Association entre alias et noms de table pour la résolution des références qualifiées.</param>
+    /// <param name="schema">Schéma SQL contenant les tables, colonnes et la table de correspondance des identifiants.</param>
+    /// <param name="defaultTables">Liste des alias de tables à utiliser pour résoudre une colonne non qualifiée lorsque plusieurs tables sont en
+    /// contexte.</param>
+    /// <returns>Un tuple contenant l’index du prochain jeton à lire et l’identifiant canonique de la colonne résolue.</returns>
+    /// <exception cref="SqlParseException">Levée lorsque le jeton de colonne ne peut pas être résolu dans le contexte fourni.</exception>
     private static (int Idx, string ColId) ParseCol(IReadOnlyList<string> toks, int startIdx,
         IReadOnlyDictionary<string, string> tablesWithAlias, SqlSchema schema, IReadOnlyList<string>? defaultTables = null)
     {
         var tok = Tok(toks, startIdx);
+
+        // Cas spécial pour le jeton "*", qui représente toutes les colonnes.
         if (tok == "*")
             return (startIdx + 1, schema.IdMap[tok]);
 
+        // Si le jeton contient un point, il est interprété comme une référence qualifiée à une colonne (table.col).
         if (tok.Contains('.'))
         {
             var parts = tok.Split('.');
@@ -286,6 +356,7 @@ public static class SqlParser
 
         Check(defaultTables is { Count: > 0 }, "Default tables should not be None or empty");
 
+        // Si le jeton ne contient pas de point, il est interprété comme une référence à une colonne non qualifiée.
         foreach (var alias in defaultTables!)
         {
             var table = Lookup(tablesWithAlias, alias, "alias");
@@ -296,6 +367,16 @@ public static class SqlParser
         throw new SqlParseException($"Error col: {tok}");
     }
 
+    /// <summary>
+    /// Analyse une unité de colonne à partir d’une séquence de jetons SQL, en prenant en charge les agrégats, le
+    /// mot-clé <c>distinct</c> et les expressions entre parenthèses.
+    /// </summary>
+    /// <param name="toks">Jetons SQL à analyser.</param>
+    /// <param name="startIdx">Index de départ de l’analyse dans <paramref name="toks"/>.</param>
+    /// <param name="tablesWithAlias">Mappage des alias vers les noms de table utilisés pour résoudre les références de colonnes.</param>
+    /// <param name="schema">Schéma SQL utilisé pour valider et résoudre les colonnes.</param>
+    /// <param name="defaultTables">Tables par défaut utilisées pour résoudre les colonnes non qualifiées, ou <see langword="null"/>.</param>
+    /// <returns>Un tuple contenant l’index du prochain jeton à lire et la valeur <c>ColUnit</c> analysée.</returns>
     private static (int Idx, ColUnit Value) ParseColUnit(IReadOnlyList<string> toks, int startIdx,
         IReadOnlyDictionary<string, string> tablesWithAlias, SqlSchema schema, IReadOnlyList<string>? defaultTables = null)
     {
@@ -303,6 +384,7 @@ public static class SqlParser
         var len = toks.Count;
         var isBlock = false;
         var isDistinct = false;
+
         if (Tok(toks, idx) == "(")
         {
             isBlock = true;
@@ -343,12 +425,25 @@ public static class SqlParser
         return (idx, new ColUnit(noneAgg, colId, isDistinct));
     }
 
+    /// <summary>
+    /// Analyse une unité de valeur SQL à partir d’une séquence de jetons, avec prise en charge d’une expression entre
+    /// parenthèses et d’un opérateur d’unité optionnel entre deux unités de colonne.
+    /// </summary>
+    /// <remarks>Si l’analyse commence par <c>(</c>, une parenthèse fermante correspondante est
+    /// requise.</remarks>
+    /// <param name="toks">Jetons SQL à analyser.</param>
+    /// <param name="startIdx">Index de départ dans <paramref name="toks"/>.</param>
+    /// <param name="tablesWithAlias">Mappage des alias de table vers leurs noms de table.</param>
+    /// <param name="schema">Schéma SQL utilisé pour résoudre les références de colonnes.</param>
+    /// <param name="defaultTables">Tables par défaut à utiliser pour la résolution des colonnes quand aucun nom de table explicite n’est fourni.</param>
+    /// <returns>Un tuple contenant l’index du prochain jeton à lire et la <c>ValUnit</c> analysée.</returns>
     private static (int Idx, ValUnit Value) ParseValUnit(IReadOnlyList<string> toks, int startIdx,
         IReadOnlyDictionary<string, string> tablesWithAlias, SqlSchema schema, IReadOnlyList<string>? defaultTables = null)
     {
         var idx = startIdx;
         var len = toks.Count;
         var isBlock = false;
+
         if (Tok(toks, idx) == "(")
         {
             isBlock = true;
@@ -375,6 +470,15 @@ public static class SqlParser
         return (idx, new ValUnit(unitOp, colUnit1, colUnit2));
     }
 
+    /// <summary>
+    /// Analyse une unité de table à partir d’un index de jeton et résout le nom de table ainsi que son identifiant dans
+    /// le schéma.
+    /// </summary>
+    /// <param name="toks">Liste en lecture seule des jetons SQL à analyser.</param>
+    /// <param name="startIdx">Index de départ de l’unité de table dans la liste des jetons.</param>
+    /// <param name="tablesWithAlias">Dictionnaire en lecture seule utilisé pour résoudre un alias de table vers son nom de table.</param>
+    /// <param name="schema">Schéma SQL contenant la table de correspondance des identifiants de table.</param>
+    /// <returns>Un tuple contenant l’index après l’unité analysée, l’identifiant de table résolu et le nom de table résolu.</returns>
     private static (int Idx, string TableId, string TableName) ParseTableUnit(IReadOnlyList<string> toks, int startIdx,
         IReadOnlyDictionary<string, string> tablesWithAlias, SqlSchema schema)
     {
@@ -390,6 +494,16 @@ public static class SqlParser
         return (idx, Lookup(schema.IdMap, key, "table"), key);
     }
 
+    /// <summary>
+    /// Analyse une unité de valeur SQL à partir d’une séquence de jetons, avec prise en charge d’une expression entre
+    /// parenthèses et d’un opérateur d’unité optionnel entre deux unités de colonne.
+    /// </summary>
+    /// <param name="toks">Liste en lecture seule des jetons SQL à analyser.</param>
+    /// <param name="startIdx">Index de départ de l’unité de valeur dans la liste des jetons.</param>
+    /// <param name="tablesWithAlias">Dictionnaire en lecture seule utilisé pour résoudre un alias de table vers son nom de table.</param>
+    /// <param name="schema">Schéma SQL contenant la table de correspondance des identifiants de table.</param>
+    /// <param name="defaultTables">Tables par défaut à utiliser pour la résolution des colonnes quand aucun nom de table explicite n’est fourni.</param>
+    /// <returns>Un tuple contenant l’index après l’unité analysée et la valeur SQL analysée.</returns>
     private static (int Idx, SqlValue Value) ParseValue(IReadOnlyList<string> toks, int startIdx,
         IReadOnlyDictionary<string, string> tablesWithAlias, SqlSchema schema, IReadOnlyList<string>? defaultTables = null)
     {
@@ -406,22 +520,26 @@ public static class SqlParser
         SqlValue val;
         if (Tok(toks, idx) == "select")
         {
+            // token is a subquery
             ParsedSql sub;
             (idx, sub) = ParseSql(toks, idx, tablesWithAlias, schema);
             val = new SubQueryValue(sub);
         }
         else if (toks[idx].Contains('"'))
         {
+            // token is a string value
             val = new StringValue(toks[idx]);
             idx++;
         }
         else if (double.TryParse(toks[idx], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var number))
         {
+            // token is a number value
             val = new NumberValue(number);
             idx++;
         }
         else
         {
+            // token is a column value
             var endIdx = idx;
             while (endIdx < len && toks[endIdx] != "," && toks[endIdx] != ")"
                    && toks[endIdx] != "and" && !ClauseKeywords.Contains(toks[endIdx]) && !JoinKeywords.Contains(toks[endIdx]))
@@ -442,6 +560,16 @@ public static class SqlParser
         return (idx, val);
     }
 
+    /// <summary>
+    /// Analyse une expression de condition SQL à partir d’un index de jeton et construit la séquence ordonnée des
+    /// éléments de condition et connecteurs logiques.
+    /// </summary>
+    /// <param name="toks">Liste en lecture seule des jetons SQL à analyser.</param>
+    /// <param name="startIdx">Index du premier jeton à analyser pour la condition.</param>
+    /// <param name="tablesWithAlias">Dictionnaire en lecture seule associant alias et noms de tables disponibles pour la résolution des références.</param>
+    /// <param name="schema">Schéma SQL utilisé pour valider et interpréter les références et les valeurs.</param>
+    /// <param name="defaultTables">Liste optionnelle des tables par défaut à utiliser quand aucune table explicite n’est indiquée.</param>
+    /// <returns>Un tuple contenant l’index du prochain jeton non consommé et la liste des éléments de condition analysés.</returns>
     private static (int Idx, List<ConditionItem> Conds) ParseCondition(IReadOnlyList<string> toks, int startIdx,
         IReadOnlyDictionary<string, string> tablesWithAlias, SqlSchema schema, IReadOnlyList<string>? defaultTables = null)
     {
@@ -466,6 +594,7 @@ public static class SqlParser
             SqlValue? val2 = null;
             if (opId == Array.IndexOf(WhereOps, "between"))
             {
+                // between..and... special case: dual values
                 (idx, val1) = ParseValue(toks, idx, tablesWithAlias, schema, defaultTables);
                 Check(Tok(toks, idx) == "and", "Expected 'and' in between");
                 idx++;
@@ -473,6 +602,7 @@ public static class SqlParser
             }
             else
             {
+                // normal case: single value
                 (idx, val1) = ParseValue(toks, idx, tablesWithAlias, schema, defaultTables);
             }
 
@@ -484,13 +614,25 @@ public static class SqlParser
             if (idx < len && CondOps.Contains(toks[idx]))
             {
                 conds.Add(new ConditionConnector(toks[idx]));
-                idx++;
+                idx++;  // skip and/or
             }
         }
 
         return (idx, conds);
     }
 
+    /// <summary>
+    /// Analyse une clause SELECT à partir d'une liste de jetons SQL et construit la représentation structurée de la
+    /// clause.
+    /// </summary>
+    /// <remarks>Prend en charge DISTINCT, les opérateurs d'agrégation reconnus et une liste d'éléments
+    /// séparés par des virgules jusqu'au début d'une autre clause SQL.</remarks>
+    /// <param name="toks">Jetons SQL à analyser.</param>
+    /// <param name="startIdx">Index du jeton où la clause SELECT commence.</param>
+    /// <param name="tablesWithAlias">Correspondance entre alias de table et noms de table utilisés pour la résolution des références.</param>
+    /// <param name="schema">Schéma SQL utilisé pour valider et résoudre les unités de valeur.</param>
+    /// <param name="defaultTables">Tables à utiliser par défaut pour résoudre les colonnes non qualifiées, ou null.</param>
+    /// <returns>Un tuple contenant l'index du prochain jeton après la clause SELECT et la clause SELECT analysée.</returns>
     private static (int Idx, SelectClause Value) ParseSelect(IReadOnlyList<string> toks, int startIdx,
         IReadOnlyDictionary<string, string> tablesWithAlias, SqlSchema schema, IReadOnlyList<string>? defaultTables = null)
     {

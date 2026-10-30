@@ -27,6 +27,13 @@ public static class SpiderGoldParser
     public static List<SpiderGoldMatch> MatchGold(IEnumerable<SpiderExample> examples, string goldPath)
         => MatchGold(examples, Load(goldPath));
 
+    /// <summary>
+    /// Construit une clé canonique composée de l’identifiant de base de données 
+    /// et d’une version normalisée de la requête SQL.
+    /// </summary>
+    /// <param name="dbId">Identifiant de la base de données à inclure dans la clé.</param>
+    /// <param name="sql">Requête SQL à normaliser en supprimant les espaces superflus, le point-virgule final et la casse.</param>
+    /// <returns>Tuple contenant l’identifiant de base de données d’origine et la requête SQL normalisée en minuscules.</returns>
     private static (string, string) Key(string dbId, string sql)
         => (dbId, string.Join(' ', sql.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
             .TrimEnd(';', ' ')
