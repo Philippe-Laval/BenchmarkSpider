@@ -33,6 +33,15 @@ namespace BenchmarkSpider.Tests
         }
 
         [TestMethod]
+        public void Tokenize_with_qualified_columns_quotedValueAreNotLowered()
+        {
+            var toks = SqlParser.Tokenize("SELECT count(*) FROM student AS T1 JOIN has_pet AS T2 ON T1.stuid  =  T2.stuid JOIN pets AS T3 ON T2.petid  =  T3.petid WHERE T1.sex  =  'F' AND T3.pettype  =  'dog'");
+            CollectionAssert.AreEqual(
+                new[] { "select", "count", "(", "*", ")", "from", "student", "as", "t1", "join", "has_pet", "as", "t2", "on", "t1.stuid", "=", "t2.stuid", "join", "pets", "as", "t3", "on", "t2.petid", "=", "t3.petid", "where", "t1.sex", "=", "\"F\"", "and", "t3.pettype", "=", "\"dog\"" },
+                toks);
+        }
+
+        [TestMethod]
         public void Tokenize_MinusAfterOperandIsSubtraction()
         {
             CollectionAssert.AreEqual(
@@ -47,6 +56,38 @@ namespace BenchmarkSpider.Tests
                 new[] { "(", "a", ")", "-", "1" },
                 SqlParser.Tokenize("(a) -1"));
         }
+
+        // The parser is not expected to match Spider's tokenizer exactly, so this test is disabled. It was used to verify that the parser can handle Spider's tokenization.
+
+        //[TestMethod]
+        //public void Tokenize_DevJson()
+        //{
+        //    List<SpiderExample> examples = SpiderParser.Load(SpiderParser.DevJsonPath);
+        //
+        //    var failures = new List<string>();
+        //    foreach (var example in examples)
+        //    {
+        //        try
+        //        {
+        //            var toks = SqlParser.Tokenize(example.Query);
+        //
+        //            // Spider's tokenizer lowercases everything, so we do the same for comparison
+        //            var expectedToks = example.QueryToks.Select(o => o.ToLower()).ToList();
+        //
+        //            CollectionAssert.AreEqual(expectedToks, toks, $"Tokens mismatch for {example.DbId}: {example.Query}");
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            failures.Add($"Tokens mismatch for {example.DbId}: {example.Query}\n{ex}");
+        //        }
+        //    }
+        //
+        //    if (failures.Count > 0)
+        //    {
+        //        Assert.Fail(string.Join("\n", failures));
+        //    }
+        //}
+
 
         [TestMethod]
         public void GetSql_SimpleSelectWithWhereOrderLimit()
