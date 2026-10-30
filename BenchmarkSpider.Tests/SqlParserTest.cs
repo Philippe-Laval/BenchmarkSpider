@@ -25,14 +25,14 @@ namespace BenchmarkSpider.Tests
         [TestMethod]
         public void GetSql_SimpleSelectWithWhereOrderLimit()
         {
-            var sql = SqlParser.GetSql(Schema(), "SELECT name FROM singer WHERE age > 30 ORDER BY age DESC LIMIT 3");
+            ParsedSql sql = SqlParser.GetSql(Schema(), "SELECT name FROM singer WHERE age > 30 ORDER BY age DESC LIMIT 3");
 
-            Assert.AreEqual(1, sql.Select.Items.Count);
+            Assert.HasCount(1, sql.Select.Items);
             Assert.AreEqual("__singer.name__", sql.Select.Items[0].ValUnit.ColUnit1.ColId);
             Assert.AreEqual("__singer__", sql.From.TableUnits.Single().TableId);
             var cond = (CondUnit)sql.Where.Single();
             Assert.AreEqual(Array.IndexOf(SqlParser.WhereOps, ">"), cond.OpId);
-            Assert.AreEqual(30d, ((NumberValue)cond.Val1).Value);
+            Assert.AreEqual(30d, ((NumberValue?)cond.Val1)?.Value);
             Assert.AreEqual("desc", sql.OrderBy!.OrderType);
             Assert.AreEqual(3, sql.Limit);
         }
@@ -80,7 +80,7 @@ namespace BenchmarkSpider.Tests
         public void GetSql_DevJson_MatchesSpiderParsedSql()
         {
             var dbs = SpiderTablesLoader.LoadByDbId(SpiderTablesLoader.TablesJsonPath);
-            var examples = SpiderParser.Load(SpiderParser.DevJsonPath);
+            List<SpiderExample> examples = SpiderParser.Load(SpiderParser.DevJsonPath);
             var failures = new List<string>();
 
             foreach (var example in examples)
@@ -91,7 +91,7 @@ namespace BenchmarkSpider.Tests
                     var parsed = SqlParser.GetSql(SqlSchema.FromDatabase(db), example.Query);
                     var actual = JsonSerializer.SerializeToElement(ToJson(parsed, IdResolver(db)));
                     var expected = JsonSerializer.SerializeToElement(example.Sql);
-                    if (!SameJson(Normalize(expected), actual))
+                    if (!expected.SameJson(actual))
                         failures.Add($"{example.DbId}: {example.Query}");
                 }
                 catch (Exception ex)
@@ -188,29 +188,5 @@ namespace BenchmarkSpider.Tests
         // Round trip through SpiderSql turns missing members into JsonValueKind.Undefined; nothing to normalise
         // beyond that, so this is the identity (kept as a seam for future differences).
         private static JsonElement Normalize(JsonElement e) => e;
-
-        private static bool SameJson(JsonElement a, JsonElement b)
-        {
-            if (a.ValueKind == JsonValueKind.True || a.ValueKind == JsonValueKind.False)
-                return a.ValueKind == b.ValueKind;
-            if (a.ValueKind != b.ValueKind)
-                return false;
-            switch (a.ValueKind)
-            {
-                case JsonValueKind.Number:
-                    return a.GetDouble() == b.GetDouble();
-                case JsonValueKind.String:
-                    return a.GetString() == b.GetString();
-                case JsonValueKind.Array:
-                    return a.GetArrayLength() == b.GetArrayLength()
-                        && a.EnumerateArray().Zip(b.EnumerateArray()).All(p => SameJson(p.First, p.Second));
-                case JsonValueKind.Object:
-                    var pa = a.EnumerateObject().ToDictionary(p => p.Name, p => p.Value);
-                    var pb = b.EnumerateObject().ToDictionary(p => p.Name, p => p.Value);
-                    return pa.Count == pb.Count && pa.All(p => pb.TryGetValue(p.Key, out var v) && SameJson(p.Value, v));
-                default:
-                    return true;
-            }
-        }
     }
 }
