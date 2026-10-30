@@ -130,6 +130,63 @@ namespace BenchmarkSpider.Tests
                 $"{failures.Count}/{examples.Count} mismatches:\n" + string.Join("\n", failures.Take(15)));
         }
 
+        [TestMethod]
+        public void GetSql_TrainSpiderJson_MatchesSpiderParsedSql()
+        {
+            var dbs = SpiderTablesLoader.LoadByDbId(SpiderTablesLoader.TablesJsonPath);
+            List<SpiderExample> examples = SpiderParser.Load(SpiderParser.TrainSpiderJsonPath);
+            var failures = new List<string>();
+
+            foreach (var example in examples)
+            {
+                try
+                {
+                    var db = dbs[example.DbId];
+                    var parsed = SqlParser.GetSql(SqlSchema.FromDatabase(db), example.Query);
+                    var actual = JsonSerializer.SerializeToElement(ToJson(parsed, IdResolver(db)));
+                    var expected = JsonSerializer.SerializeToElement(example.Sql);
+                    if (!expected.SameJson(actual))
+                        failures.Add($"{example.DbId}: {example.Query}");
+                }
+                catch (Exception ex)
+                {
+                    failures.Add($"{example.DbId}: {example.Query} -> {ex.GetType().Name}: {ex.Message}");
+                }
+            }
+
+            Assert.IsLessThanOrEqualTo(10, failures.Count,
+                $"{failures.Count}/{examples.Count} mismatches:\n" + string.Join("\n", failures.Take(15)));
+        }
+
+        [TestMethod]
+        public void GetSql_TrainOthersJson_MatchesSpiderParsedSql()
+        {
+            var dbs = SpiderTablesLoader.LoadByDbId(SpiderTablesLoader.TablesJsonPath);
+            List<SpiderExample> examples = SpiderParser.Load(SpiderParser.TrainOthersJsonPath);
+            var failures = new List<string>();
+
+            foreach (var example in examples)
+            {
+                try
+                {
+                    var db = dbs[example.DbId];
+                    var parsed = SqlParser.GetSql(SqlSchema.FromDatabase(db), example.Query);
+                    var actual = JsonSerializer.SerializeToElement(ToJson(parsed, IdResolver(db)));
+                    var expected = JsonSerializer.SerializeToElement(example.Sql);
+                    if (!expected.SameJson(actual))
+                        failures.Add($"{example.DbId}: {example.Query}");
+                }
+                catch (Exception ex)
+                {
+                    failures.Add($"{example.DbId}: {example.Query} -> {ex.GetType().Name}: {ex.Message}");
+                }
+            }
+
+            Assert.IsLessThanOrEqualTo(10, failures.Count,
+                $"{failures.Count}/{examples.Count} mismatches:\n" + string.Join("\n", failures.Take(15)));
+        }
+
+
         private static Func<string, int> IdResolver(SpiderDatabase db)
         {
             var map = new Dictionary<string, int> { ["__all__"] = 0 };
@@ -259,5 +316,6 @@ namespace BenchmarkSpider.Tests
                 Assert.Fail($"Failures:\n{string.Join("\n", failures)}");
             }
         }
+
     }
 }
