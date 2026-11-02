@@ -109,4 +109,32 @@ public partial class SpiderEvaluator
         return pMap.Count == gMap.Count
             && pMap.All(kv => gMap.TryGetValue(kv.Key, out var other) && kv.Value.SequenceEqual(other));
     }
+
+    /// <summary>
+    /// Equivalent of isValidSQL: true when the SQL statement can be executed on the SQLite database.
+    /// </summary>
+    /// <param name="sql">Texte SQL à exécuter.</param>
+    /// <param name="dbPath">Chemin vers le fichier de base de données SQLite.</param>
+    /// <returns>true si l’exécution réussit ; sinon, false.</returns>
+    public static bool IsValidSql(string sql, string dbPath)
+    {
+        var connectionString = new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder
+        {
+            DataSource = dbPath,
+            Mode = Microsoft.Data.Sqlite.SqliteOpenMode.ReadOnly,
+        }.ToString();
+        using var conn = new Microsoft.Data.Sqlite.SqliteConnection(connectionString);
+        conn.Open();
+
+        try
+        {
+            ExecQuery(conn, sql);
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+        return true;
+    }
+
 }

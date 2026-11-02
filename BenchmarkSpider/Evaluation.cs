@@ -5,26 +5,77 @@ namespace BenchmarkSpider;
 
 // C# port of spider/evaluation.py (exact / partial matching and execution accuracy).
 
+/// <summary>
+/// Représente les métriques d’un score partiel, incluant l’exactitude, le rappel, 
+/// le score F1 et les volumes de référence et de prédiction.
+/// </summary>
+/// <remarks>Acc, Rec et F1 sont généralement exprimés sur l’intervalle [0, 1].</remarks>
+/// <param name="Acc">Exactitude (accuracy) obtenue.</param>
+/// <param name="Rec">Rappel (recall) obtenu.</param>
+/// <param name="F1">Score F1 calculé à partir de l’exactitude et du rappel.</param>
+/// <param name="LabelTotal">Nombre total d’éléments de référence attendus.</param>
+/// <param name="PredTotal">Nombre total d’éléments prédits.</param>
 public record PartialScore(double Acc, double Rec, double F1, int LabelTotal, int PredTotal);
 
+/// <summary>
+/// Représente un agrégat partiel de métriques d’évaluation, incluant l’exactitude, le rappel, 
+/// le score F1 et leurs compteurs associés.
+/// </summary>
+/// <remarks>Utile pour accumuler des résultats intermédiaires avant de calculer des métriques globales.</remarks>
 public class PartialAggregate
 {
+    /// <summary>
+    /// Exactitude (accuracy)
+    /// </summary>
     public double Acc { get; set; }
+    /// <summary>
+    /// Rappel (recall)
+    /// </summary>
     public double Rec { get; set; }
+    /// <summary>
+    /// Score F1 calculé à partir de l’exactitude et du rappel
+    /// </summary>
     public double F1 { get; set; }
     public int AccCount { get; set; }
     public int RecCount { get; set; }
 }
 
+/// <summary>
+/// Représente les scores agrégés d’un niveau, incluant le nombre d’éléments évalués, 
+/// le score exact, le score d’exécution et les scores partiels par catégorie.
+/// </summary>
+/// <remarks>La collection des scores partiels est initialisée avec une entrée par type défini dans
+/// `SpiderEvaluator.PartialTypes`.</remarks>
 public class LevelScores
 {
+    /// <summary>
+    /// Nombre d’éléments évalués
+    /// </summary>
     public int Count { get; set; }
+    /// <summary>
+    /// Obtient ou définit la valeur exacte.
+    /// </summary>
     public double Exact { get; set; }
+    /// <summary>
+    /// Score d’exécution
+    /// </summary>
     public double Exec { get; set; }
+
+    /// <summary>
+    /// Scores partiels par catégorie
+    /// </summary>
     public Dictionary<string, PartialAggregate> Partial { get; } =
         SpiderEvaluator.PartialTypes.ToDictionary(t => t, _ => new PartialAggregate());
 }
 
+/// <summary>
+/// 
+/// </summary>
+/// <param name="PredictSql"></param>
+/// <param name="GoldSql"></param>
+/// <param name="Hardness"></param>
+/// <param name="Exact"></param>
+/// <param name="Partial"></param>
 public record SpiderEvalEntry(string PredictSql, string GoldSql, string Hardness, bool Exact, IReadOnlyDictionary<string, PartialScore> Partial);
 
 /// <summary>
@@ -194,35 +245,69 @@ public partial class SpiderEvaluator
 
     // ---------------------------------------------------------------- partial evaluations
 
+    /// <summary>
+    /// Évalue la correspondance entre les éléments SELECT prédits et de référence, 
+    /// avec et sans prise en compte des agrégations.
+    /// </summary>
+    /// <remarks>Les correspondances sont calculées après normalisation canonique et retrait de la première
+    /// occurrence trouvée pour éviter de compter plusieurs fois le même élément.</remarks>
+    /// <param name="pred">Requête SQL analysée à évaluer.</param>
+    /// <param name="label">Requête SQL analysée de référence utilisée pour le calcul des correspondances.</param>
+    /// <returns>Un tuple contenant, dans l’ordre, le nombre d’éléments SELECT de référence, le nombre d’éléments SELECT prédits,
+    /// le nombre de correspondances exactes, puis le nombre de correspondances en ignorant les agrégations.</returns>
     private static (int LabelTotal, int PredTotal, int Cnt, int CntWoAgg) EvalSel(ParsedSql pred, ParsedSql label)
     {
         var labelSel = label.Select.Items.Select(Canon).ToList();
-        var labelWoAgg = label.Select.Items.Select(i => Canon(i.ValUnit)).ToList();
+        var labelWithoutAgg = label.Select.Items.Select(i => Canon(i.ValUnit)).ToList();
         int cnt = 0, cntWoAgg = 0;
         foreach (var unit in pred.Select.Items)
         {
             cnt += RemoveFirstIfPresent(labelSel, Canon(unit));
-            cntWoAgg += RemoveFirstIfPresent(labelWoAgg, Canon(unit.ValUnit));
+            cntWoAgg += RemoveFirstIfPresent(labelWithoutAgg, Canon(unit.ValUnit));
         }
         return (label.Select.Items.Count, pred.Select.Items.Count, cnt, cntWoAgg);
     }
 
+    /// <summary>
+    /// Évalue la correspondance des conditions <c>WHERE</c> entre une requête prédite et une requête de référence.
+    /// </summary>
+    /// <param name="pred">Requête SQL analysée utilisée comme prédiction.</param>
+    /// <param name="label">Requête SQL analysée utilisée comme référence attendue.</param>
+    /// <returns>Un tuple contenant, dans l’ordre, le nombre de conditions <c>WHERE</c> de la référence, 
+    /// le nombre de conditions <c>WHERE</c> de la prédiction, 
+    /// le nombre de correspondances exactes, 
+    /// puis le nombre de correspondances en ignorant l’agrégation.</returns>
     private static (int, int, int, int) EvalWhere(ParsedSql pred, ParsedSql label)
     {
         var predConds = Units(pred.Where).ToList();
         var labelConds = Units(label.Where).Select(c => Canon(c)).ToList();
-        var labelWoAgg = Units(label.Where).Select(c => Canon(c.ValUnit)).ToList();
+        var labelWithoutAgg = Units(label.Where).Select(c => Canon(c.ValUnit)).ToList();
         int cnt = 0, cntWoAgg = 0;
         foreach (var unit in predConds)
         {
             cnt += RemoveFirstIfPresent(labelConds, Canon(unit));
-            cntWoAgg += RemoveFirstIfPresent(labelWoAgg, Canon(unit.ValUnit));
+            cntWoAgg += RemoveFirstIfPresent(labelWithoutAgg, Canon(unit.ValUnit));
         }
         return (Units(label.Where).Count(), predConds.Count, cnt, cntWoAgg);
     }
 
+    /// <summary>
+    /// Retourne la partie de la chaîne située après le premier point ('.'), 
+    /// ou la chaîne d'origine si aucun point n'est présent.
+    /// </summary>
+    /// <param name="s">Chaîne à analyser.</param>
+    /// <returns>La sous-chaîne à l'index 1 après division sur '.', ou la chaîne d'origine si aucun séparateur n'est trouvé.</returns>
     private static string AfterDot(string s) => s.Contains('.') ? s.Split('.')[1] : s;
 
+    /// <summary>
+    /// Évalue la correspondance des colonnes GROUP BY entre une requête prédite et la référence.
+    /// </summary>
+    /// <remarks>La comparaison est effectuée sur les identifiants de colonnes normalisés après le dernier
+    /// point, avec une mise en correspondance unitaire des doublons.</remarks>
+    /// <param name="pred">Requête SQL prédite contenant les colonnes de regroupement à évaluer.</param>
+    /// <param name="label">Requête SQL de référence contenant les colonnes de regroupement attendues.</param>
+    /// <returns>Un tuple contenant, dans l'ordre, le nombre de colonnes GROUP BY de référence, le nombre de colonnes GROUP BY
+    /// prédites et le nombre de correspondances trouvées.</returns>
     private static (int, int, int) EvalGroup(ParsedSql pred, ParsedSql label)
     {
         var predCols = pred.GroupBy.Select(u => AfterDot(u.ColId)).ToList();
@@ -233,6 +318,14 @@ public partial class SpiderEvaluator
         return (label.GroupBy.Count, pred.GroupBy.Count, cnt);
     }
 
+    /// <summary>
+    /// Évalue la correspondance de la condition HAVING entre une requête prédite et la référence.
+    /// </summary>
+    /// <param name="pred">Requête SQL analysée prédite.</param>
+    /// <param name="label">Requête SQL analysée de référence.</param>
+    /// <returns>Un triplet contenant, dans l’ordre, l’indicateur de présence de GROUP BY dans la référence, l’indicateur de
+    /// présence de GROUP BY dans la prédiction, puis 1 si les colonnes de GROUP BY et la condition HAVING normalisée
+    /// correspondent, sinon 0.</returns>
     private static (int, int, int) EvalHaving(ParsedSql pred, ParsedSql label)
     {
         var predTotal = pred.GroupBy.Count > 0 ? 1 : 0;
@@ -245,6 +338,14 @@ public partial class SpiderEvaluator
         return (labelTotal, predTotal, cnt);
     }
 
+    /// <summary>
+    /// Évalue la présence et la correspondance des clauses ORDER BY entre une requête prédite et une requête de
+    /// référence.
+    /// </summary>
+    /// <param name="pred">Requête SQL analysée à évaluer.</param>
+    /// <param name="label">Requête SQL analysée de référence.</param>
+    /// <returns>Un triplet contenant le total attendu de clause ORDER BY, le total prédit de clause ORDER BY et un indicateur de
+    /// correspondance exacte (1 si ORDER BY correspond et si la présence de LIMIT est identique, sinon 0).</returns>
     private static (int, int, int) EvalOrder(ParsedSql pred, ParsedSql label)
     {
         var predTotal = pred.OrderBy is not null ? 1 : 0;
@@ -255,7 +356,14 @@ public partial class SpiderEvaluator
             cnt = 1;
         return (labelTotal, predTotal, cnt);
     }
-
+    
+    /// <summary>
+    /// Évalue la présence et la correspondance des connecteurs AND/OR entre une requête prédite et une requête de référence.
+    /// </summary>
+    /// <param name="pred">Requête SQL analysée à évaluer.</param>
+    /// <param name="label">Requête SQL analysée de référence.</param>
+    /// <returns>Un triplet contenant le total attendu de connecteurs AND/OR, le total prédit de connecteurs AND/OR et un indicateur de
+    /// correspondance exacte (1 si les connecteurs correspondent, sinon 0).</returns>
     private static (int, int, int) EvalAndOr(ParsedSql pred, ParsedSql label)
     {
         var predAo = Connectors(pred.Where).ToHashSet();
@@ -287,6 +395,15 @@ public partial class SpiderEvaluator
         return nested;
     }
 
+    /// <summary>
+    /// Évalue une paire de requêtes SQL analysées et calcule les indicateurs de présence et de correspondance exacte
+    /// imbriquée.
+    /// </summary>
+    /// <param name="pred">Requête prédite analysée à comparer.</param>
+    /// <param name="label">Requête de référence analysée utilisée pour la comparaison.</param>
+    /// <returns>Un triplet d'entiers contenant, dans l'ordre, l'indicateur de présence de label (1 ou 0), l'indicateur de
+    /// présence de pred (1 ou 0) et l'indicateur de correspondance exacte (1 si les deux valeurs sont non nulles et
+    /// exactement égales ; sinon 0).</returns>
     private static (int, int, int) EvalNested(ParsedSql? pred, ParsedSql? label)
     {
         var cnt = 0;
@@ -295,6 +412,13 @@ public partial class SpiderEvaluator
         return (label is not null ? 1 : 0, pred is not null ? 1 : 0, cnt);
     }
 
+    /// <summary>
+    /// Évalue les opérations ensemblistes imbriquées entre une requête prédite et une requête de référence 
+    /// en agrégeant INTERSECT, EXCEPT et UNION.
+    /// </summary>
+    /// <param name="pred">Requête SQL analysée à évaluer.</param>
+    /// <param name="label">Requête SQL analysée de référence.</param>
+    /// <returns>Un tuple de trois entiers contenant la somme des métriques calculées pour INTERSECT, EXCEPT et UNION.</returns>
     private static (int, int, int) EvalIuen(ParsedSql pred, ParsedSql label)
     {
         var (lt1, pt1, c1) = EvalNested(pred.Intersect, label.Intersect);
@@ -378,11 +502,21 @@ public partial class SpiderEvaluator
     private static int CountComponent2(ParsedSql sql) 
         => GetNestedSql(sql).Count;
 
+    /// <summary>
+    /// Calcule un compteur de complexité en additionnant les catégories de la requête qui apparaissent plus d’une fois.
+    /// </summary>
+    /// <remarks>Le comptage des agrégations suit une logique spécifique : certains éléments de condition
+    /// (not_op, connecteurs AND/OR) sont inclus.</remarks>
+    /// <param name="sql">Requête SQL analysée à évaluer.</param>
+    /// <returns>Nombre de catégories dépassant le seuil de 1 : agrégations, colonnes SELECT, 
+    /// conditions WHERE et clauses GROUP BY.</returns>
     private static int CountOthers(ParsedSql sql)
     {
         var count = 0;
 
         // Same quirks as the Python version: has_agg(cond_unit) looks at not_op, has_agg('and'/'or') is always true.
+
+        // number of aggregation
         var aggCount = sql.Select.Items.Count(i => i.AggId != 0);
         aggCount += Units(sql.Where).Count(c => c.NotOp);
         aggCount += sql.GroupBy.Count(c => c.AggId != 0);
@@ -392,14 +526,26 @@ public partial class SpiderEvaluator
             aggCount += sql.OrderBy.ValUnits.Count(v => v.ColUnit2 is not null && v.ColUnit2.AggId != 0);
         }
         aggCount += sql.Having.Count(i => i is ConditionConnector || (i is CondUnit c && c.NotOp));
+        
         if (aggCount > 1) count++;
 
+        // number of select columns
         if (sql.Select.Items.Count > 1) count++;
+        // number of where conditions
         if (sql.Where.Count > 1) count++;
+        // number of group by clauses
         if (sql.GroupBy.Count > 1) count++;
+        
         return count;
     }
 
+    /// <summary>
+    /// Évalue le niveau de difficulté d’une requête SQL analysée selon des métriques de complexité structurelle.
+    /// </summary>
+    /// <remarks>La classification est déterminée à partir du nombre de composants principaux, de composants
+    /// secondaires et d’autres constructions détectées.</remarks>
+    /// <param name="sql">Requête SQL analysée à classifier.</param>
+    /// <returns>Une chaîne indiquant le niveau de difficulté : "easy", "medium", "hard" ou "extra".</returns>
     public string EvalHardness(ParsedSql sql)
     {
         var c1 = CountComponent1(sql);
@@ -417,6 +563,15 @@ public partial class SpiderEvaluator
 
     // ---------------------------------------------------------------- matching
 
+    /// <summary>
+    /// Évalue si une requête prédite correspond exactement à la requête de référence 
+    /// à partir des scores partiels et des tables référencées.
+    /// </summary>
+    /// <remarks>Met à jour la propriété PartialScores avec le résultat de l’évaluation partielle.</remarks>
+    /// <param name="pred">Requête SQL analysée prédite.</param>
+    /// <param name="label">Requête SQL analysée de référence.</param>
+    /// <returns>true si tous les scores partiels ont un F1 de 1 et, lorsque la référence contient des tables, si les ensembles
+    /// de tables canonisées sont identiques ; sinon, false.</returns>
     public bool EvalExactMatch(ParsedSql pred, ParsedSql label)
     {
         var partial = EvalPartialMatch(pred, label);
@@ -434,41 +589,55 @@ public partial class SpiderEvaluator
         return true;
     }
 
+    /// <summary>
+    /// Calcule un score partiel à partir du nombre d’éléments corrects et des totaux prédits et attendus.
+    /// </summary>
+    /// <param name="cnt">Nombre d’éléments correctement prédits.</param>
+    /// <param name="predTotal">Nombre total d’éléments prédits.</param>
+    /// <param name="labelTotal">Nombre total d’éléments attendus.</param>
+    /// <returns>Instance de <c>PartialScore</c> contenant l’accuracy, le rappel, le score F1, ainsi que les totaux attendus et
+    /// prédits.</returns>
     private static PartialScore Score(int cnt, int predTotal, int labelTotal)
     {
         var (acc, rec, f1) = GetScores(cnt, predTotal, labelTotal);
         return new PartialScore(acc, rec, f1, labelTotal, predTotal);
     }
 
+    /// <summary>
+    /// Évalue une requête prédite par rapport à une requête de référence et calcule les scores partiels pour chaque composant.
+    /// </summary>
+    /// <param name="pred">Requête SQL analysée prédite.</param>
+    /// <param name="label">Requête SQL analysée de référence.</param>
+    /// <returns>Dictionnaire associant chaque composant de la requête à son score partiel.</returns>
     public Dictionary<string, PartialScore> EvalPartialMatch(ParsedSql pred, ParsedSql label)
     {
         var res = new Dictionary<string, PartialScore>();
 
-        var (lt, pt, cnt, cntWo) = EvalSel(pred, label);
-        res["select"] = Score(cnt, pt, lt);
-        res["select(no AGG)"] = Score(cntWo, pt, lt);
+        var (labelTotal, predTotal, cnt, cntWithoutAgg) = EvalSel(pred, label);
+        res["select"] = Score(cnt, predTotal, labelTotal);
+        res["select(no AGG)"] = Score(cntWithoutAgg, predTotal, labelTotal);
 
-        (lt, pt, cnt, cntWo) = EvalWhere(pred, label);
-        res["where"] = Score(cnt, pt, lt);
-        res["where(no OP)"] = Score(cntWo, pt, lt);
+        (labelTotal, predTotal, cnt, cntWithoutAgg) = EvalWhere(pred, label);
+        res["where"] = Score(cnt, predTotal, labelTotal);
+        res["where(no OP)"] = Score(cntWithoutAgg, predTotal, labelTotal);
 
-        (lt, pt, cnt) = EvalGroup(pred, label);
-        res["group(no Having)"] = Score(cnt, pt, lt);
+        (labelTotal, predTotal, cnt) = EvalGroup(pred, label);
+        res["group(no Having)"] = Score(cnt, predTotal, labelTotal);
 
-        (lt, pt, cnt) = EvalHaving(pred, label);
-        res["group"] = Score(cnt, pt, lt);
+        (labelTotal, predTotal, cnt) = EvalHaving(pred, label);
+        res["group"] = Score(cnt, predTotal, labelTotal);
 
-        (lt, pt, cnt) = EvalOrder(pred, label);
-        res["order"] = Score(cnt, pt, lt);
+        (labelTotal, predTotal, cnt) = EvalOrder(pred, label);
+        res["order"] = Score(cnt, predTotal, labelTotal);
 
-        (lt, pt, cnt) = EvalAndOr(pred, label);
-        res["and/or"] = Score(cnt, pt, lt);
+        (labelTotal, predTotal, cnt) = EvalAndOr(pred, label);
+        res["and/or"] = Score(cnt, predTotal, labelTotal);
 
-        (lt, pt, cnt) = EvalIuen(pred, label);
-        res["IUEN"] = Score(cnt, pt, lt);
+        (labelTotal, predTotal, cnt) = EvalIuen(pred, label);
+        res["IUEN"] = Score(cnt, predTotal, labelTotal);
 
-        (lt, pt, cnt) = EvalKeywords(pred, label);
-        res["keywords"] = Score(cnt, pt, lt);
+        (labelTotal, predTotal, cnt) = EvalKeywords(pred, label);
+        res["keywords"] = Score(cnt, predTotal, labelTotal);
 
         return res;
     }
@@ -624,7 +793,10 @@ public partial class SpiderEvaluator
         string? dbDir = null)
     {
         var evaluator = new SpiderEvaluator();
-        var result = new SpiderEvalResult { ExecEvaluated = dbDir is not null };
+        var result = new SpiderEvalResult {
+            // Indique si l’évaluation par exécution a été effectuée en fonction de la présence du répertoire de bases de données.
+            ExecEvaluated = dbDir is not null 
+        };
         var scores = result.Scores;
         var kmaps = new Dictionary<string, Dictionary<string, string>>();
 
