@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "BenchmarkSpider.GetTables": {
+      "commandName": "Project",
+      "commandLineArgs": "\"C:\\CodeGithubPerso\\BenchmarkSpider\\BenchmarkSpider.Library\\spider\\database\" \"C:\\temp\\output.json\" \"C:\\CodeGithubPerso\\BenchmarkSpider\\BenchmarkSpider.Library\\spider\\tables.json\""
+    }
+  }
+}

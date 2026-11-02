@@ -131,6 +131,33 @@ public static class SpiderTablesParser
     /// <c>SpiderDatabase</c> correspondante.</returns>
     public static Dictionary<string, SpiderDatabase> LoadByDbId(string path)
         => Load(path).ToDictionary(d => d.DbId);
+
+    public static bool CompareFiles(string path1, string path2)
+    {
+        var db1 = Load(path1);
+        var db2 = Load(path2);
+
+        if (db1.Count != db2.Count)
+            return false;
+
+        var ids1 = db1.Select(d => d.DbId).ToHashSet();
+        var ids2 = db2.Select(d => d.DbId).ToHashSet();
+        if (ids1.Count != db1.Count || ids2.Count != db2.Count || !ids1.SetEquals(ids2))
+            return false;
+
+        var byId2 = db2.ToDictionary(d => d.DbId);
+        return db1.All(d => AreEqual(d, byId2[d.DbId]));
+    }
+
+    private static bool AreEqual(SpiderDatabase a, SpiderDatabase b)
+        => a.TableNamesOriginal.SequenceEqual(b.TableNamesOriginal)
+        && a.TableNames.SequenceEqual(b.TableNames)
+        && a.ColumnNamesOriginal.SequenceEqual(b.ColumnNamesOriginal)
+        && a.ColumnNames.SequenceEqual(b.ColumnNames)
+        && a.ColumnTypes.SequenceEqual(b.ColumnTypes)
+        && a.ForeignKeys.SequenceEqual(b.ForeignKeys)
+        && a.PrimaryKeys.Count == b.PrimaryKeys.Count
+        && a.PrimaryKeys.Zip(b.PrimaryKeys).All(p => p.First.ColumnIndexes.SequenceEqual(p.Second.ColumnIndexes));
 }
 
 /// <summary>

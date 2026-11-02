@@ -93,4 +93,13 @@ public sealed class SpiderTablesParserTest
 
         Assert.IsEmpty(missing, string.Join(", ", missing));
     }
+
+    [TestMethod]
+    public void CompareFiles_WithSameFiles()
+    {
+        string path = SpiderTablesParser.TablesJsonPath;
+        Assert.IsTrue(SpiderTablesParser.CompareFiles(path, path));
+    }
+
+
 }
