@@ -1,3 +1,4 @@
+using BenchmarkSpider.Library.Parsers;
 using System.Globalization;
 using System.Text;
 
@@ -897,7 +898,7 @@ public partial class SpiderEvaluator
 
         var gold = Read(goldPath);
         var pred = Read(predictPath);
-        var dbs = SpiderTablesLoader.LoadByDbId(tablesPath);
+        var dbs = SpiderTablesParser.LoadByDbId(tablesPath);
         var items = pred.Zip(gold, (p, g) => (p[0], g[0], g[1]));
         return Evaluate(items, dbs, dbDir, log);
     }

@@ -2,7 +2,7 @@ using System.Data.Common;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace BenchmarkSpider.Library;
+namespace BenchmarkSpider.Library.Models;
 
 /// <summary>
 /// Représente un exemple du jeu de données Spider associant une question en langage naturel à sa requête SQL,

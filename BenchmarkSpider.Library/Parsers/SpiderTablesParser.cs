@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace BenchmarkSpider.Library;
+namespace BenchmarkSpider.Library.Parsers;
 
 /// <summary>A column entry of tables.json: [tableIndex, "name"]. tableIndex is -1 for the "*" column.</summary>
 [JsonConverter(typeof(SpiderColumnNameConverter))]
@@ -81,11 +81,12 @@ public class SpiderDatabase
 }
 
 /// <summary>
-/// Fournit des méthodes utilitaires pour charger les métadonnées des bases Spider à partir d’un fichier JSON.
+/// Fournit des méthodes utilitaires pour charger les métadonnées des bases Spider 
+/// à partir d’un fichier JSON "tables.json".
 /// </summary>
 /// <remarks>Inclut le chargement synchrone et asynchrone, ainsi qu’une projection en dictionnaire indexé par
 /// identifiant de base de données.</remarks>
-public static class SpiderTablesLoader
+public static class SpiderTablesParser
 {
     public static string TablesJsonPath => Path.Combine(SpiderParser.SpiderDirectory, "tables.json");
 

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
 
-namespace BenchmarkSpider.Library
+namespace BenchmarkSpider.Library.Extensions
 {
     public static class JsonElementExtensions
     {

@@ -1,3 +1,5 @@
+using BenchmarkSpider.Library.Parsers;
+
 namespace BenchmarkSpider.Library;
 
 // C# port of spider/process_sql.py.

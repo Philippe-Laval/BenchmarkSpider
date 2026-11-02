@@ -1,12 +1,26 @@
+using BenchmarkSpider.Library.Parsers;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace BenchmarkSpider.Library;
 
+/// <summary>
+/// Fournit des opérations utilitaires pour analyser les fichiers du jeu de données Spider, afficher des statistiques
+/// par fichier JSON et vérifier la présence des fichiers de base de données associés.
+/// </summary>
+/// <remarks>Suppose une arborescence racine contenant les fichiers JSON d'exemples et un dossier
+/// `database/<dbId>/` avec les fichiers `.sqlite` et, en option, les scripts de schéma SQL.</remarks>
 public class SpiderStats
 {
-
+    /// <summary>
+    /// Charge les exemples depuis un fichier JSON, affiche le nombre total d’exemples et de bases de données
+    /// distinctes, puis signale les bases de données avec des fichiers manquants.
+    /// </summary>
+    /// <remarks>Les identifiants de base de données sont traités sans tenir compte de la casse, et la sortie
+    /// est écrite sur la console.</remarks>
+    /// <param name="rootFolderPath">Chemin du dossier racine contenant les fichiers attendus pour chaque base de données.</param>
+    /// <param name="jsonPath">Chemin du fichier JSON contenant les exemples à analyser.</param>
     public static void PrintStats(string rootFolderPath, string jsonPath)
     {
         var examples = SpiderParser.Load(jsonPath);
@@ -25,6 +39,13 @@ public class SpiderStats
         }
     }
 
+    /// <summary>
+    /// Affiche les statistiques pour les jeux de données `dev.json`, `train_spider.json` et `train_others.json` situés
+    /// dans le dossier racine spécifié.
+    /// </summary>
+    /// <remarks>Le dossier doit contenir les fichiers `dev.json`, `train_spider.json` et
+    /// `train_others.json`.</remarks>
+    /// <param name="rootFolderPath">Chemin du dossier racine contenant les fichiers de jeux de données à analyser.</param>
     public static void PrintAllStats(string rootFolderPath)
     {
         PrintStats(rootFolderPath, Path.Combine(rootFolderPath, "dev.json"));
