@@ -1,9 +1,9 @@
 using BenchmarkSpider.Library.Parsers;
 
-namespace BenchmarkSpider.Library.Tests;
+namespace BenchmarkSpider.Library.Tests.Parsers;
 
 [TestClass]
-public sealed class SpiderTablesTest
+public sealed class SpiderTablesParserTest
 {
     private const string Sample = """
     [

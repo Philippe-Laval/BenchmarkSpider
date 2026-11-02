@@ -2,7 +2,7 @@ using BenchmarkSpider.Library.Models;
 using BenchmarkSpider.Library.Parsers;
 using System.Text.Json;
 
-namespace BenchmarkSpider.Library.Tests;
+namespace BenchmarkSpider.Library.Tests.Parsers;
 
 [TestClass]
 public sealed class SpiderParserTest

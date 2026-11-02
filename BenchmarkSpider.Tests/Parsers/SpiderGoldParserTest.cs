@@ -1,7 +1,7 @@
 using BenchmarkSpider.Library.Models;
 using BenchmarkSpider.Library.Parsers;
 
-namespace BenchmarkSpider.Library.Tests;
+namespace BenchmarkSpider.Library.Tests.Parsers;
 
 [TestClass]
 public sealed class SpiderGoldParserTest
