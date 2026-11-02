@@ -1,6 +1,6 @@
 ﻿using BenchmarkSpider.Library;
     
-namespace BenchmarkSpider
+namespace BenchmarkSpider.Evaluate
 {
     internal class Program
     {
