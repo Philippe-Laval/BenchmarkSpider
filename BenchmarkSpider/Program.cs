@@ -8,7 +8,9 @@ namespace BenchmarkSpider
         {
             if (args.Length == 0)
             {
-                SpiderStats.PrintAllStats();
+                const string rootFolderPath = @"C:\CodeGithubPerso\BenchmarkSpider\BenchmarkSpider.Library\spider";
+
+                SpiderStats.PrintAllStats(rootFolderPath);
                 return 0;
             }
 
