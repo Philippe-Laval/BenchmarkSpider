@@ -1,9 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
 
-namespace BenchmarkSpider
+namespace BenchmarkSpider.Library
 {
     public static class JsonElementExtensions
     {

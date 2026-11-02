@@ -1,13 +1,13 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace BenchmarkSpider;
+namespace BenchmarkSpider.Library;
 
 public static class SpiderParser
 {
-    public const string DevJsonPath = @"C:\CodeGithubPerso\BenchmarkSpider\BenchmarkSpider\spider\dev.json";
-    public const string TrainSpiderJsonPath = @"C:\CodeGithubPerso\BenchmarkSpider\BenchmarkSpider\spider\train_spider.json";
-    public const string TrainOthersJsonPath = @"C:\CodeGithubPerso\BenchmarkSpider\BenchmarkSpider\spider\train_others.json";
+    public const string DevJsonPath = @"C:\CodeGithubPerso\BenchmarkSpider\BenchmarkSpider.Library\spider\dev.json";
+    public const string TrainSpiderJsonPath = @"C:\CodeGithubPerso\BenchmarkSpider\BenchmarkSpider.Library\spider\train_spider.json";
+    public const string TrainOthersJsonPath = @"C:\CodeGithubPerso\BenchmarkSpider\BenchmarkSpider.Library\spider\train_others.json";
 
     private static readonly JsonSerializerOptions Options = new()
     {

@@ -1,4 +1,5 @@
-namespace BenchmarkSpider.Tests
+using BenchmarkSpider.Library;
+namespace BenchmarkSpider.Library.Tests
 {
     [TestClass]
     public sealed class SpiderEvaluatorTest

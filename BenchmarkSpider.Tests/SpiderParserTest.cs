@@ -1,3 +1,4 @@
+using BenchmarkSpider.Library;
 using System.Text.Json;
 
 namespace BenchmarkSpider.Tests

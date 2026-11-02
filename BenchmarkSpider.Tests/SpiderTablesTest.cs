@@ -1,3 +1,4 @@
+using BenchmarkSpider.Library;
 namespace BenchmarkSpider.Tests
 {
     [TestClass]

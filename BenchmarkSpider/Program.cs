@@ -1,4 +1,6 @@
-﻿namespace BenchmarkSpider
+﻿using BenchmarkSpider.Library;
+    
+namespace BenchmarkSpider
 {
     internal class Program
     {

@@ -1,4 +1,4 @@
-namespace BenchmarkSpider;
+namespace BenchmarkSpider.Library;
 
 /// <summary>One line of dev_gold.sql / train_gold.sql: "SQL&lt;TAB&gt;db_id".</summary>
 public record SpiderGoldEntry(string Sql, string DbId);

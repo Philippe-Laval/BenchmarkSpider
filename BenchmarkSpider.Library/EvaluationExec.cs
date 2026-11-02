@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace BenchmarkSpider;
+namespace BenchmarkSpider.Library;
 
 public partial class SpiderEvaluator
 {

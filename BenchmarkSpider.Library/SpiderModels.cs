@@ -2,7 +2,7 @@ using System.Data.Common;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace BenchmarkSpider;
+namespace BenchmarkSpider.Library;
 
 public class SpiderExample
 {

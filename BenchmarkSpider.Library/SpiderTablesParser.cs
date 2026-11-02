@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace BenchmarkSpider;
+namespace BenchmarkSpider.Library;
 
 /// <summary>A column entry of tables.json: [tableIndex, "name"]. tableIndex is -1 for the "*" column.</summary>
 [JsonConverter(typeof(SpiderColumnNameConverter))]

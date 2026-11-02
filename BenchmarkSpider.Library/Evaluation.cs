@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
 
-namespace BenchmarkSpider;
+namespace BenchmarkSpider.Library;
 
 // C# port of spider/evaluation.py (exact / partial matching and execution accuracy).
 

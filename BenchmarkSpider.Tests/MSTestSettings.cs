@@ -1,1 +1,2 @@
-﻿[assembly: Parallelize(Scope = ExecutionScope.MethodLevel)]
+using BenchmarkSpider.Library;
+[assembly: Parallelize(Scope = ExecutionScope.MethodLevel)]

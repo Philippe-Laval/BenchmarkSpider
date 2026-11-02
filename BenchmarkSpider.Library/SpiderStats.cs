@@ -1,12 +1,12 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace BenchmarkSpider;
+namespace BenchmarkSpider.Library;
 
 public class SpiderStats
 {
-    const string RootFolderPath = @"C:\CodeGithubPerso\BenchmarkSpider\BenchmarkSpider\spider";
+    const string RootFolderPath = @"C:\CodeGithubPerso\BenchmarkSpider\BenchmarkSpider.Library\spider";
 
     public static void PrintStats(string jsonPath)
     {
