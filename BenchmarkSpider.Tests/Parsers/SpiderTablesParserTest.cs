@@ -1,3 +1,4 @@
+using BenchmarkSpider.Library.Generator;
 using BenchmarkSpider.Library.Parsers;
 
 namespace BenchmarkSpider.Library.Tests.Parsers;
@@ -101,5 +102,30 @@ public sealed class SpiderTablesParserTest
         Assert.IsTrue(SpiderTablesParser.CompareFiles(path, path));
     }
 
+    [TestMethod]
+    public void CompareFiles_WithDifferentFiles()
+    {
+        string tempPath = Path.GetTempPath();
+
+        var inputDir = SpiderTablesGenerator.SpiderDatabasePath;
+        var outputFile = Path.Combine(tempPath, "output.json");
+        var exTabFile = SpiderTablesParser.TablesJsonPath;
+
+        if (File.Exists(outputFile))
+        {
+            File.Delete(outputFile);
+        }
+
+        int result = SpiderTablesGenerator.GenerateTablesJson(inputDir, outputFile, exTabFile);
+        Assert.AreEqual(0, result, "GenerateTablesJson should return 0 for success.");
+
+        string path = SpiderTablesParser.TablesJsonPath;
+        Assert.IsTrue(SpiderTablesParser.CompareFiles(path, outputFile));
+
+        if (File.Exists(outputFile))
+        {
+            File.Delete(outputFile);
+        }
+    }
 
 }

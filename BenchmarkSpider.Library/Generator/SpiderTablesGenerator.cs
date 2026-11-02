@@ -11,6 +11,8 @@ namespace BenchmarkSpider.Library.Generator
 {
     public class SpiderTablesGenerator
     {
+        public static string SpiderDatabasePath => Path.Combine(Path.GetDirectoryName(SpiderTablesParser.TablesJsonPath)!, "database");
+
         public static int GenerateTablesJson(string inputDir, string outputFile, string exTabFile)
         {
             if (!Directory.Exists(inputDir))
