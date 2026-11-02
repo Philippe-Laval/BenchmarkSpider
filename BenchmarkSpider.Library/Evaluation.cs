@@ -902,7 +902,7 @@ public partial class SpiderEvaluator
         return Evaluate(items, dbs, dbDir, log);
     }
 
-    public static string FormatScores(SpiderEvalResult result)
+    public static string FormatScores(SpiderEvalResult result, string etype = "all")
     {
         var sb = new StringBuilder();
         var scores = result.Scores;
@@ -915,12 +915,15 @@ public partial class SpiderEvaluator
         sb.AppendLine("".PadRight(20) + " " + string.Join(" ", Levels.Select(l => l.PadRight(20))));
         Row("count", s => s.Count.ToString(CultureInfo.InvariantCulture).PadRight(20));
 
-        if (result.ExecEvaluated)
+        if (result.ExecEvaluated && etype is "all" or "exec")
         {
             sb.AppendLine();
             sb.AppendLine("====================== EXECUTION ACCURACY =====================");
             Row("execution", s => F(s.Exec));
         }
+
+        if (etype is not ("all" or "match"))
+            return sb.ToString();
 
         sb.AppendLine();
         sb.AppendLine("====================== EXACT MATCHING ACCURACY =====================");
