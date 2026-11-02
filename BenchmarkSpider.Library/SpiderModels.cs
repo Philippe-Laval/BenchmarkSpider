@@ -4,6 +4,13 @@ using System.Text.Json.Serialization;
 
 namespace BenchmarkSpider.Library;
 
+/// <summary>
+/// Représente un exemple du jeu de données Spider associant une question en langage naturel à sa requête SQL,
+/// ses jetons et sa structure SQL analysée.
+/// Utilisé pour les fichiers JSON du jeu de données Spider, tels que dev.json, train_spider.json et train_others.json.
+/// </summary>
+/// <remarks>Utilisé comme modèle de sérialisation et de désérialisation JSON 
+/// pour les annotations de questions SQL.</remarks>
 public class SpiderExample
 {
     /// <summary>
@@ -51,8 +58,12 @@ public class SpiderExample
 }
 
 /// <summary>
+/// Représente une requête SQL au format Spider, incluant les clauses principales et les opérations ensemblistes
+/// imbriquées.
 /// Parsed SQL (process_sql.py). Heterogeneous arrays (mixed bool/int/array/object) are kept as JsonElement.
 /// </summary>
+/// <remarks>Le type mappe directement la structure JSON source : plusieurs clauses sont conservées en
+/// JsonElement, et les opérations INTERSECT, UNION et EXCEPT sont représentées récursivement par SpiderSql.</remarks>
 public class SpiderSql
 {
     [JsonPropertyName("from")]
@@ -88,6 +99,11 @@ public class SpiderSql
     public SpiderSql? Except { get; set; }
 }
 
+/// <summary>
+/// Représente la clause FROM d’une requête Spider, incluant les unités de table et les conditions associées.
+/// </summary>
+/// <remarks>Le modèle conserve les champs `table_units` et `conds` sous forme de `JsonElement` pour prendre en
+/// charge la structure JSON hétérogène du schéma Spider.</remarks>
 public class SpiderFrom
 {
     /// <summary>[["table_unit", tableId] | ["sql", SpiderSql], ...]</summary>
