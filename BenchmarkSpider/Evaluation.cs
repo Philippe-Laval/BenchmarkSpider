@@ -129,21 +129,60 @@ public partial class SpiderEvaluator
 
     // ---------------------------------------------------------------- helpers
 
-    private static IEnumerable<CondUnit> Units(IReadOnlyList<ConditionItem> c) => c.OfType<CondUnit>();
+    /// <summary>
+    /// Extrait les éléments de type CondUnit d’une liste d’éléments de condition.
+    /// </summary>
+    /// <remarks>L’évaluation de la séquence est différée.</remarks>
+    /// <param name="c">Liste en lecture seule des éléments de condition à filtrer.</param>
+    /// <returns>Séquence des éléments qui sont de type CondUnit.</returns>
+    private static IEnumerable<CondUnit> Units(IReadOnlyList<ConditionItem> c)
+        => c.OfType<CondUnit>();
 
-    private static IEnumerable<string> Connectors(IReadOnlyList<ConditionItem> c) => c.OfType<ConditionConnector>().Select(k => k.Operator);
+    /// <summary>
+    /// Extrait les opérateurs de connexion des éléments de condition.
+    /// </summary>
+    /// <param name="c">Liste en lecture seule des éléments de condition à filtrer.</param>
+    /// <returns>Séquence des valeurs d’opérateur des éléments de type <c>ConditionConnector</c>, dans l’ordre d’énumération.</returns>
+    private static IEnumerable<string> Connectors(IReadOnlyList<ConditionItem> c) 
+        => c.OfType<ConditionConnector>().Select(k => k.Operator);
 
-    private static IEnumerable<CondUnit> AllCondUnits(ParsedSql sql) => Units(sql.From.Conds).Concat(Units(sql.Where)).Concat(Units(sql.Having));
+    /// <summary>
+    /// Rassemble toutes les unités de condition des clauses FROM, WHERE et HAVING d’une requête SQL analysée.
+    /// </summary>
+    /// <param name="sql">Requête SQL analysée contenant les conditions à parcourir.</param>
+    /// <returns>Séquence de toutes les unités de condition trouvées dans FROM, WHERE et HAVING.</returns>
+    private static IEnumerable<CondUnit> AllCondUnits(ParsedSql sql) 
+        => Units(sql.From.Conds).Concat(Units(sql.Where)).Concat(Units(sql.Having));
 
-    private static IEnumerable<string> AllConnectors(ParsedSql sql) => Connectors(sql.From.Conds).Concat(Connectors(sql.Where)).Concat(Connectors(sql.Having));
+    /// <summary>
+    /// Collects all logical connectors found across the query's FROM conditions, WHERE clause, and HAVING clause.
+    /// </summary>
+    /// <param name="sql">Parsed SQL structure containing the FROM, WHERE, and HAVING sections to inspect.</param>
+    /// <returns>A sequence of connector tokens found in the FROM conditions, WHERE clause, and HAVING clause.</returns>
+    private static IEnumerable<string> AllConnectors(ParsedSql sql) 
+        => Connectors(sql.From.Conds).Concat(Connectors(sql.Where)).Concat(Connectors(sql.Having));
 
+    /// <summary>
+    /// Calcule trois scores binaires de correspondance exacte entre les résultats prédits et les valeurs de référence.
+    /// </summary>
+    /// <param name="count">Nombre d’éléments correctement comptés.</param>
+    /// <param name="predTotal">Nombre total d’éléments prédits.</param>
+    /// <param name="labelTotal">Nombre total d’éléments de référence.</param>
+    /// <returns>Un tuple (int, int, int) valant (1, 1, 1) quand les totaux sont égaux et que le nombre correct atteint ce total
+    /// ; sinon (0, 0, 0).</returns>
     private static (int, int, int) GetScores(int count, int predTotal, int labelTotal)
     {
         if (predTotal != labelTotal)
             return (0, 0, 0);
         return count == predTotal ? (1, 1, 1) : (0, 0, 0);
     }
-
+    
+    /// <summary>
+    /// Supprime la première occurrence d’un élément dans une liste, si elle est présente.
+    /// </summary>
+    /// <param name="list">Liste dans laquelle chercher l’élément.</param>
+    /// <param name="item">Élément à supprimer.</param>
+    /// <returns>1 si l’élément a été trouvé et supprimé, 0 sinon.</returns>
     private static int RemoveFirstIfPresent(List<string> list, string item)
     {
         var idx = list.IndexOf(item);
@@ -226,6 +265,14 @@ public partial class SpiderEvaluator
         return (predAo.Count, labelAo.Count, 0);
     }
 
+    /// <summary>
+    /// Extrait les requêtes SQL imbriquées référencées dans une requête analysée.
+    /// </summary>
+    /// <remarks>L’ordre reflète l’itération des unités de condition, puis l’ajout de INTERSECT, EXCEPT et
+    /// UNION lorsqu’elles sont définies.</remarks>
+    /// <param name="sql">Requête SQL analysée à inspecter pour y trouver des sous-requêtes et des opérations d’ensemble imbriquées.</param>
+    /// <returns>Liste des requêtes SQL imbriquées trouvées dans les unités de condition et dans les clauses INTERSECT, EXCEPT et
+    /// UNION ; peut être vide si aucune n’est présente.</returns>
     private static List<ParsedSql> GetNestedSql(ParsedSql sql)
     {
         var nested = new List<ParsedSql>();
@@ -303,6 +350,12 @@ public partial class SpiderEvaluator
 
     // ---------------------------------------------------------------- hardness
 
+    /// <summary>
+    /// Calcule un score de composants pour une requête SQL analysée en additionnant la présence de clauses, 
+    /// les jointures supplémentaires, les connecteurs OR et les conditions LIKE.
+    /// </summary>
+    /// <param name="sql">Requête SQL analysée à évaluer.</param>
+    /// <returns>Nombre total de composants comptabilisés.</returns>
     private static int CountComponent1(ParsedSql sql)
     {
         var count = 0;
@@ -310,13 +363,20 @@ public partial class SpiderEvaluator
         if (sql.GroupBy.Count > 0) count++;
         if (sql.OrderBy is not null) count++;
         if (sql.Limit is not null) count++;
+        // JOIN
         if (sql.From.TableUnits.Count > 0) count += sql.From.TableUnits.Count - 1;
         count += AllConnectors(sql).Count(t => t == "or");
         count += AllCondUnits(sql).Count(c => c.OpId == LikeOp);
         return count;
     }
 
-    private static int CountComponent2(ParsedSql sql) => GetNestedSql(sql).Count;
+    /// <summary>
+    /// Compte le nombre de composants SQL imbriqués dans la requête analysée.
+    /// </summary>
+    /// <param name="sql">Requête SQL analysée à inspecter.</param>
+    /// <returns>Nombre de composants SQL imbriqués.</returns>
+    private static int CountComponent2(ParsedSql sql) 
+        => GetNestedSql(sql).Count;
 
     private static int CountOthers(ParsedSql sql)
     {
