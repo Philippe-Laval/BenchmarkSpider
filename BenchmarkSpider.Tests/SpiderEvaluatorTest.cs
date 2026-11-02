@@ -3,6 +3,13 @@ namespace BenchmarkSpider.Tests
     [TestClass]
     public sealed class SpiderEvaluatorTest
     {
+        private static string DbDir()
+        {
+            var dbDir = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(SpiderTablesLoader.TablesJsonPath)!, "database"));
+            Assert.IsTrue(Directory.Exists(dbDir), dbDir);
+            return dbDir;
+        }
+
         [TestMethod]
         public void Evaluate_DevGoldAgainstItself_IsPerfectExactMatch()
         {
@@ -10,7 +17,7 @@ namespace BenchmarkSpider.Tests
             var examples = SpiderParser.Load(SpiderParser.DevJsonPath);
 
             var items = examples.Select(e => (e.Query, e.Query, e.DbId));
-            var result = SpiderEvaluator.Evaluate(items, dbs);
+            var result = SpiderEvaluator.Evaluate(items, dbs, DbDir());
 
             Assert.AreEqual(examples.Count, result.Scores["all"].Count);
             Assert.AreEqual(1.0, result.Scores["all"].Exact, 1e-9);
@@ -29,7 +36,7 @@ namespace BenchmarkSpider.Tests
             {
                 ($"SELECT {col} FROM {table}", $"SELECT {col} FROM {table} WHERE {col} = 1", db.DbId)
             };
-            var result = SpiderEvaluator.Evaluate(items, dbs);
+            var result = SpiderEvaluator.Evaluate(items, dbs, DbDir());
 
             Assert.AreEqual(0.0, result.Scores["all"].Exact, 1e-9);
             Assert.AreEqual("easy", result.Entries[0].Hardness);
@@ -39,15 +46,14 @@ namespace BenchmarkSpider.Tests
         public void Evaluate_ExecutionAccuracy_ConcertSinger()
         {
             var dbs = SpiderTablesLoader.LoadByDbId(SpiderTablesLoader.TablesJsonPath);
-            var dbDir = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(SpiderTablesLoader.TablesJsonPath)!, "database"));
-            Assert.IsTrue(Directory.Exists(dbDir), dbDir);
+            var dbDir = DbDir();
 
             var items = new[]
             {
                 ("SELECT count(*) FROM singer", "SELECT count(*) FROM singer", "concert_singer"),
                 ("SELECT name FROM singer", "SELECT count(*) FROM singer", "concert_singer"),
             };
-            var result = SpiderEvaluator.Evaluate(items, dbs, null, dbDir);
+            var result = SpiderEvaluator.Evaluate(items, dbs, dbDir);
 
             Assert.AreEqual(0.5, result.Scores["all"].Exec, 1e-9);
         }
@@ -60,7 +66,7 @@ namespace BenchmarkSpider.Tests
             var table = db.TableNamesOriginal[0];
 
             var items = new[] { ("SELECT nope FROM nowhere", $"SELECT count(*) FROM {table}", db.DbId) };
-            var result = SpiderEvaluator.Evaluate(items, dbs);
+            var result = SpiderEvaluator.Evaluate(items, dbs, DbDir());
 
             Assert.AreEqual(1, result.EvalErrorCount);
             Assert.AreEqual(0.0, result.Scores["all"].Exact, 1e-9);

@@ -787,16 +787,13 @@ public partial class SpiderEvaluator
     /// par exécution.</param>
     /// <returns>Un objet <c>SpiderEvalResult</c> contenant les scores exacts, partiels et d’exécution agrégés, ainsi que le
     /// détail par entrée et le nombre d’erreurs d’analyse.</returns>
-    public static SpiderEvalResult Evaluate(IEnumerable<(string PredSql, string GoldSql, string DbId)> items, 
-        IReadOnlyDictionary<string, SpiderDatabase> dbs, 
-        Action<string>? log = null, 
-        string? dbDir = null)
+    public static SpiderEvalResult Evaluate(IEnumerable<(string PredSql, string GoldSql, string DbId)> items,
+        IReadOnlyDictionary<string, SpiderDatabase> dbs,
+        string dbDir,
+        Action<string>? log = null)
     {
         var evaluator = new SpiderEvaluator();
-        var result = new SpiderEvalResult {
-            // Indique si l’évaluation par exécution a été effectuée en fonction de la présence du répertoire de bases de données.
-            ExecEvaluated = dbDir is not null 
-        };
+        var result = new SpiderEvalResult { ExecEvaluated = true };
         var scores = result.Scores;
         var kmaps = new Dictionary<string, Dictionary<string, string>>();
 
@@ -805,7 +802,8 @@ public partial class SpiderEvaluator
             var db = dbs[dbId];
             if (!kmaps.TryGetValue(dbId, out var kmap))
                 kmaps[dbId] = kmap = BuildForeignKeyMap(db);
-            var schema = SqlSchema.FromDatabase(db);
+            var dbPath = Path.Combine(dbDir, dbId, dbId + ".sqlite");
+            var schema = SqlSchema.FromSqlite(dbPath);
 
             var gSql = SqlParser.GetSql(schema, gStr);
             var hardness = evaluator.EvalHardness(gSql);
@@ -829,7 +827,7 @@ public partial class SpiderEvaluator
             var pValid = BuildValidColUnits(pSql.From.TableUnits, schema);
             pSql = RebuildSqlCol(pValid, RebuildSqlVal(pSql), kmap)!;
 
-            if (dbDir is not null && EvalExecMatch(Path.Combine(dbDir, dbId, dbId + ".sqlite"), pStr, gStr, pSql, gSql))
+            if (EvalExecMatch(dbPath, pStr, gStr, pSql, gSql))
             {
                 scores[hardness].Exec += 1;
                 scores["all"].Exec += 1;
@@ -891,7 +889,8 @@ public partial class SpiderEvaluator
     /// Same inputs as evaluation.py: gold file ("sql\tdb_id" per line), prediction file (first tab separated column per line)
     /// and tables.json.
     /// </summary>
-    public static SpiderEvalResult Evaluate(string goldPath, string predictPath, string tablesPath, Action<string>? log = null, string? dbDir = null)
+    public static SpiderEvalResult Evaluate(string goldPath, string predictPath,
+        string tablesPath, string dbDir, Action<string>? log = null)
     {
         static List<string[]> Read(string path) => File.ReadAllLines(path)
             .Select(l => l.Trim()).Where(l => l.Length > 0).Select(l => l.Split('\t')).ToList();
@@ -900,7 +899,7 @@ public partial class SpiderEvaluator
         var pred = Read(predictPath);
         var dbs = SpiderTablesLoader.LoadByDbId(tablesPath);
         var items = pred.Zip(gold, (p, g) => (p[0], g[0], g[1]));
-        return Evaluate(items, dbs, log, dbDir);
+        return Evaluate(items, dbs, dbDir, log);
     }
 
     public static string FormatScores(SpiderEvalResult result)
