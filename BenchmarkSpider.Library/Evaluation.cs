@@ -804,7 +804,7 @@ public partial class SpiderEvaluator
             if (!kmaps.TryGetValue(dbId, out var kmap))
                 kmaps[dbId] = kmap = BuildForeignKeyMap(db);
             var dbPath = Path.Combine(dbDir, dbId, dbId + ".sqlite");
-            var schema = SqlSchema.FromSqlite(dbPath);
+            var schema = SqlSchema.GetSchemasFromSqlite(dbPath);
 
             var gSql = SqlParser.GetSql(schema, gStr);
             var hardness = evaluator.EvalHardness(gSql);

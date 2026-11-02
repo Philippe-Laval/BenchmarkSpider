@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="BenchmarkSpider.Library/BenchmarkSpider.Library.csproj" />
+  <Project Path="BenchmarkSpider.ParseSqlOne/BenchmarkSpider.ParseSqlOne.csproj" Id="fb408ad6-55fb-4f85-ba98-99780ad23431" />
   <Project Path="BenchmarkSpider.Tests/BenchmarkSpider.Library.Tests.csproj" />
   <Project Path="BenchmarkSpider/BenchmarkSpider.csproj" Id="dba446b7-25ae-4c47-a3c6-69ad0ef25fcb" />
 </Solution>

@@ -105,7 +105,7 @@ public class SqlSchema
     }
 
     /// <summary>Construit le schéma d'une base de données décrite dans tables.json (équivalent de get_schema).</summary>
-    public static SqlSchema FromDatabase(SpiderDatabase db)
+    public static SqlSchema GetSchemasFromJson(SpiderDatabase db)
     {
         var tables = new Dictionary<string, List<string>>();
         for (var i = 0; i < db.TableNamesOriginal.Count; i++)
@@ -119,7 +119,7 @@ public class SqlSchema
     }
 
     /// <summary>Builds the schema directly from a SQLite database file (equivalent of get_schema).</summary>
-    public static SqlSchema FromSqlite(string dbPath)
+    public static SqlSchema GetSchemasFromSqlite(string dbPath)
     {
         var tables = new Dictionary<string, List<string>>();
         var connectionString = new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder

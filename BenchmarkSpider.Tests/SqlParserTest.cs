@@ -158,7 +158,7 @@ public sealed class SqlParserTest
             try
             {
                 var db = dbs[example.DbId];
-                var parsed = SqlParser.GetSql(SqlSchema.FromDatabase(db), example.Query);
+                var parsed = SqlParser.GetSql(SqlSchema.GetSchemasFromJson(db), example.Query);
                 var actual = JsonSerializer.SerializeToElement(ToJson(parsed, IdResolver(db)));
                 var expected = JsonSerializer.SerializeToElement(example.Sql);
                 if (!expected.SameJson(actual))
@@ -186,7 +186,7 @@ public sealed class SqlParserTest
             try
             {
                 var db = dbs[example.DbId];
-                var parsed = SqlParser.GetSql(SqlSchema.FromDatabase(db), example.Query);
+                var parsed = SqlParser.GetSql(SqlSchema.GetSchemasFromJson(db), example.Query);
                 var actual = JsonSerializer.SerializeToElement(ToJson(parsed, IdResolver(db)));
                 var expected = JsonSerializer.SerializeToElement(example.Sql);
                 if (!expected.SameJson(actual))
@@ -214,7 +214,7 @@ public sealed class SqlParserTest
             try
             {
                 var db = dbs[example.DbId];
-                var parsed = SqlParser.GetSql(SqlSchema.FromDatabase(db), example.Query);
+                var parsed = SqlParser.GetSql(SqlSchema.GetSchemasFromJson(db), example.Query);
                 var actual = JsonSerializer.SerializeToElement(ToJson(parsed, IdResolver(db)));
                 var expected = JsonSerializer.SerializeToElement(example.Sql);
                 if (!expected.SameJson(actual))
@@ -326,7 +326,7 @@ public sealed class SqlParserTest
         foreach (var gold in goldList)
         {
             var db = dbs[gold.DbId];
-            var parsed = SqlParser.GetSql(SqlSchema.FromDatabase(db), gold.Sql);
+            var parsed = SqlParser.GetSql(SqlSchema.GetSchemasFromJson(db), gold.Sql);
             Assert.IsNotNull(parsed, $"Failed to parse: {gold.Sql} for db {gold.DbId}");
         }
     }
@@ -344,7 +344,7 @@ public sealed class SqlParserTest
             try
             {
                 var db = dbs[gold.DbId];
-                var parsed = SqlParser.GetSql(SqlSchema.FromDatabase(db), gold.Sql);
+                var parsed = SqlParser.GetSql(SqlSchema.GetSchemasFromJson(db), gold.Sql);
             }
             catch (Exception ex)
             {

@@ -15,6 +15,13 @@ public record SpiderPrimaryKey(IReadOnlyList<int> ColumnIndexes);
 [JsonConverter(typeof(SpiderForeignKeyConverter))]
 public record SpiderForeignKey(int ColumnIndex, int ReferencedColumnIndex);
 
+/// <summary>
+/// Représente le schéma d’une base de données Spider, incluant l’identifiant, les tables, les colonnes, leurs types et
+/// les relations de clés primaires et étrangères.
+/// Represente une entrée du fichier "tables.json" du jeu de données Spider.
+/// </summary>
+/// <remarks>Les index stockés dans les clés et les définitions de colonnes référencent les collections associées
+/// afin de relier les tables et de reconstruire les noms de colonnes qualifiés.</remarks>
 public class SpiderDatabase
 {
     /// <summary>
@@ -90,22 +97,47 @@ public static class SpiderTablesParser
 {
     public static string TablesJsonPath => Path.Combine(SpiderParser.SpiderDirectory, "tables.json");
 
+    /// <summary>
+    /// Charge une liste de bases de données SPIDER depuis un fichier JSON (tables.json).
+    /// </summary>
+    /// <param name="path">Chemin du fichier JSON à lire "tables.json".</param>
+    /// <returns>Liste des bases de données désérialisées à partir du fichier, ou une liste vide si le contenu est nul.</returns>
     public static List<SpiderDatabase> Load(string path)
     {
         using var stream = File.OpenRead(path);
         return JsonSerializer.Deserialize<List<SpiderDatabase>>(stream) ?? [];
     }
 
+    /// <summary>
+    /// Charge de manière asynchrone une liste de bases de données SPIDER depuis un fichier JSON (tables.json).
+    /// </summary>
+    /// <param name="path">Chemin du fichier JSON à lire "tables.json".</param>
+    /// <param name="ct">Jeton permettant d’annuler l’opération de lecture et de désérialisation.</param>
+    /// <returns>Une tâche qui représente l’opération asynchrone et dont le résultat est la liste des objets
+    /// <c>SpiderDatabase</c> désérialisés, ou une liste vide si le contenu JSON est nul.</returns>
     public static async Task<List<SpiderDatabase>> LoadAsync(string path, CancellationToken ct = default)
     {
         await using var stream = File.OpenRead(path);
         return await JsonSerializer.DeserializeAsync<List<SpiderDatabase>>(stream, cancellationToken: ct) ?? [];
     }
 
+    /// <summary>
+    /// Charge les définitions de bases de données Spider depuis le chemin spécifié 
+    /// et les indexe par identifiant de base de données.
+    /// </summary>
+    /// <remarks>L’opération échoue si plusieurs éléments chargés partagent le même <c>DbId</c>.</remarks>
+    /// <param name="path">Chemin du fichier source à charger.</param>
+    /// <returns>Dictionnaire des bases de données chargées, où la clé est la valeur de <c>DbId</c> et la valeur est l'instance
+    /// <c>SpiderDatabase</c> correspondante.</returns>
     public static Dictionary<string, SpiderDatabase> LoadByDbId(string path)
         => Load(path).ToDictionary(d => d.DbId);
 }
 
+/// <summary>
+/// Convertisseur JSON pour SpiderColumnName, sérialisé sous forme de tableau JSON `[tableIndex, name]`.
+/// </summary>
+/// <remarks>Lit et écrit uniquement le format de tableau à deux éléments, avec l’index de table en premier et le
+/// nom de colonne en second.</remarks>
 internal sealed class SpiderColumnNameConverter : JsonConverter<SpiderColumnName>
 {
     public override SpiderColumnName Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
@@ -131,6 +163,12 @@ internal sealed class SpiderColumnNameConverter : JsonConverter<SpiderColumnName
     }
 }
 
+/// <summary>
+/// Convertisseur JSON pour <see cref="SpiderForeignKey"/> utilisant une représentation en tableau à deux entiers.
+/// </summary>
+/// <remarks>Lit une clé étrangère depuis le format <c>[columnIndex, referencedColumnIndex]</c> et lève une <see
+/// cref="JsonException"/> si le tableau ne contient pas exactement deux valeurs. Écrit la clé étrangère dans le même
+/// format.</remarks>
 internal sealed class SpiderForeignKeyConverter : JsonConverter<SpiderForeignKey>
 {
     public override SpiderForeignKey Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
@@ -145,6 +183,10 @@ internal sealed class SpiderForeignKeyConverter : JsonConverter<SpiderForeignKey
         => JsonSerializer.Serialize(writer, new[] { value.ColumnIndex, value.ReferencedColumnIndex }, options);
 }
 
+/// <summary>
+/// Convertisseur JSON pour <see cref="SpiderPrimaryKey"/> utilisant une représentation en entier ou tableau d'entiers.
+/// </summary>
+/// <remarks>Lit une clé primaire depuis le format <c>number</c> ou <c>[number, ...]</c> et lève une <see cref="JsonException"/> si le format est invalide. Écrit la clé primaire dans le même format.</remarks>
 internal sealed class SpiderPrimaryKeyConverter : JsonConverter<SpiderPrimaryKey>
 {
     public override SpiderPrimaryKey Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
