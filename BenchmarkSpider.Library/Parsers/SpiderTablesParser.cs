@@ -132,32 +132,88 @@ public static class SpiderTablesParser
     public static Dictionary<string, SpiderDatabase> LoadByDbId(string path)
         => Load(path).ToDictionary(d => d.DbId);
 
-    public static bool CompareFiles(string path1, string path2)
+    /// <summary>Compare deux fichiers tables.json et journalise chaque différence via <paramref name="log"/> (Console par défaut).</summary>
+    public static bool CompareFiles(string path1, string path2, Action<string>? log = null)
     {
+        log ??= Console.WriteLine;
         var db1 = Load(path1);
         var db2 = Load(path2);
+        var equal = true;
 
         if (db1.Count != db2.Count)
-            return false;
+        {
+            log($"Database count differs: {db1.Count} vs {db2.Count}");
+            equal = false;
+        }
 
-        var ids1 = db1.Select(d => d.DbId).ToHashSet();
-        var ids2 = db2.Select(d => d.DbId).ToHashSet();
-        if (ids1.Count != db1.Count || ids2.Count != db2.Count || !ids1.SetEquals(ids2))
-            return false;
+        foreach (var group in db1.Concat(db2)
+            .GroupBy(d => d.DbId)
+            .Where(g => g.Count() > 1 && (db1.Count(d => d.DbId == g.Key) > 1 || db2.Count(d => d.DbId == g.Key) > 1)))
+        {
+            log($"Duplicate DbId: {group.Key}");
+            equal = false;
+        }
 
-        var byId2 = db2.ToDictionary(d => d.DbId);
-        return db1.All(d => AreEqual(d, byId2[d.DbId]));
+        var byId1 = db1.GroupBy(d => d.DbId).ToDictionary(g => g.Key, g => g.First());
+        var byId2 = db2.GroupBy(d => d.DbId).ToDictionary(g => g.Key, g => g.First());
+
+        foreach (var id in byId1.Keys.Except(byId2.Keys))
+        {
+            log($"DbId only in {path1}: {id}");
+            equal = false;
+        }
+
+        foreach (var id in byId2.Keys.Except(byId1.Keys))
+        {
+            log($"DbId only in {path2}: {id}");
+            equal = false;
+        }
+
+        foreach (var id in byId1.Keys.Intersect(byId2.Keys))
+            equal &= CompareDatabases(byId1[id], byId2[id], log);
+
+        log(equal ? "Files are equal." : "Files are different.");
+        return equal;
     }
 
-    private static bool AreEqual(SpiderDatabase a, SpiderDatabase b)
-        => a.TableNamesOriginal.SequenceEqual(b.TableNamesOriginal)
-        && a.TableNames.SequenceEqual(b.TableNames)
-        && a.ColumnNamesOriginal.SequenceEqual(b.ColumnNamesOriginal)
-        && a.ColumnNames.SequenceEqual(b.ColumnNames)
-        && a.ColumnTypes.SequenceEqual(b.ColumnTypes)
-        && a.ForeignKeys.SequenceEqual(b.ForeignKeys)
-        && a.PrimaryKeys.Count == b.PrimaryKeys.Count
-        && a.PrimaryKeys.Zip(b.PrimaryKeys).All(p => p.First.ColumnIndexes.SequenceEqual(p.Second.ColumnIndexes));
+    private static bool CompareDatabases(SpiderDatabase a, SpiderDatabase b, Action<string> log)
+    {
+        var id = a.DbId;
+        var equal = true;
+
+        bool Check<T>(string property, IReadOnlyList<T> x, IReadOnlyList<T> y, Func<T, string> format)
+        {
+            if (x.Count != y.Count)
+            {
+                log($"[{id}] {property}: count differs ({x.Count} vs {y.Count})");
+                return false;
+            }
+
+            var ok = true;
+            
+            for (var i = 0; i < x.Count; i++)
+            {
+                if (!EqualityComparer<T>.Default.Equals(x[i], y[i]))
+                {
+                    log($"[{id}] {property}[{i}]: {format(x[i])} vs {format(y[i])}");
+                    ok = false;
+                }
+            }
+            
+            return ok;
+        }
+
+        log($"Comparing table: {id}");
+
+        equal &= Check("table_names_original", a.TableNamesOriginal, b.TableNamesOriginal, s => s);
+        equal &= Check("table_names", a.TableNames, b.TableNames, s => s);
+        equal &= Check("column_names_original", a.ColumnNamesOriginal, b.ColumnNamesOriginal, c => $"[{c.TableIndex}, {c.Name}]");
+        equal &= Check("column_names", a.ColumnNames, b.ColumnNames, c => $"[{c.TableIndex}, {c.Name}]");
+        equal &= Check("column_types", a.ColumnTypes, b.ColumnTypes, s => s);
+        equal &= Check("foreign_keys", a.ForeignKeys, b.ForeignKeys, f => $"[{f.ColumnIndex}, {f.ReferencedColumnIndex}]");
+        equal &= Check("primary_keys", a.PrimaryKeys.Select(k => string.Join(",", k.ColumnIndexes)).ToList(), b.PrimaryKeys.Select(k => string.Join(",", k.ColumnIndexes)).ToList(), s => $"[{s}]");
+        return equal;
+    }
 }
 
 /// <summary>
