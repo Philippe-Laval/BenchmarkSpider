@@ -1,6 +1,6 @@
 ﻿namespace BenchmarkBird.Library.Parsers
 {
-    public class Class1
+    public class BirdParser
     {
 
     }
