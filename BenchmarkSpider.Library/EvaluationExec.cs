@@ -95,13 +95,26 @@ public partial class SpiderEvaluator
         List<List<string>> pRes;
         try
         {
+            // Exécute la requête prédite et capture les résultats
             pRes = ExecQuery(conn, pStr);
         }
         catch (Exception)
         {
+            Console.WriteLine($"Erreur lors de l'exécution de la requête prédite : {pStr}");
             return false;
         }
-        var gRes = ExecQuery(conn, gStr);
+
+        List<List<string>> gRes;
+        try
+        {
+            // Exécute la requête de référence et capture les résultats
+            gRes = ExecQuery(conn, gStr);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Erreur lors de l'exécution de la requête de référence : {e.Message}");
+            return false;
+        }
 
         var pMap = ResMap(pRes, pred.Select.Items);
         var gMap = ResMap(gRes, gold.Select.Items);

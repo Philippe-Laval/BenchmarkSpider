@@ -2,6 +2,9 @@
     
 namespace BenchmarkSpider.Evaluate
 {
+    // Exemple de ligne de commande :
+    // --gold "C:\CodeGithubPerso\BenchmarkSpider\BenchmarkSpider\evaluation_examples\gold_example.sql" --pred "C:\CodeGithubPerso\BenchmarkSpider\BenchmarkSpider\evaluation_examples\pred_example.sql" --db "C:\CodeGithubPerso\BenchmarkSpider\BenchmarkSpider.Library\spider\database" --table "C:\CodeGithubPerso\BenchmarkSpider\BenchmarkSpider.Library\spider\tables.json" --etype all
+
     internal class Program
     {
         static int Main(string[] args)
