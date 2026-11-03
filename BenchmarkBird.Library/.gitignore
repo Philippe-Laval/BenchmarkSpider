@@ -1,0 +1,16 @@
+# Build output
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Benchmark / profiling artifacts
+BenchmarkDotNet.Artifacts/
+*.nettrace
+*.etl
+
+bird/dev/dev_databases
+bird/train/train_databases

@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="BenchmarkBird.Library/BenchmarkBird.Library.csproj" Id="a445f78e-3d9f-40c1-9299-aa5fe70b2cf5" />
   <Project Path="BenchmarkSpider.GetTables/BenchmarkSpider.GetTables.csproj" Id="8b638aed-3689-4ecf-a221-e67c533bc926" />
   <Project Path="BenchmarkSpider.Library/BenchmarkSpider.Library.csproj" />
   <Project Path="BenchmarkSpider.ParseRawJson/BenchmarkSpider.ParseRawJson.csproj" Id="e9b8c02d-adaa-416e-a82c-c7f1f145cc74" />

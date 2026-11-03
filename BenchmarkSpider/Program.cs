@@ -20,12 +20,12 @@ namespace BenchmarkSpider.Evaluate
             var options = new Dictionary<string, string>();
             for (var i = 0; i < args.Length; i++)
             {
-                if (args[i] is "--gold" or "--pred" or "--db" or "--table" or "--etype" && i + 1 < args.Length)
+                if (args[i] is "--gold" or "--pred" or "--db" or "--table" or "--etype" or "--result" && i + 1 < args.Length)
                     options[args[i][2..]] = args[++i];
                 else
                 {
                     Console.Error.WriteLine($"Unknown or incomplete argument: {args[i]}");
-                    Console.Error.WriteLine("Usage: --gold <file> --pred <file> --db <dir> --table <tables.json> --etype <all|exec|match>");
+                    Console.Error.WriteLine("Usage: --gold <file> --pred <file> --db <dir> --table <tables.json> --etype <all|exec|match> [--result <file>]");
                     return 2;
                 }
             }
@@ -47,7 +47,12 @@ namespace BenchmarkSpider.Evaluate
             }
 
             var result = SpiderEvaluator.Evaluate(options["gold"], options["pred"], options["table"], options["db"], Console.WriteLine);
-            Console.Write(SpiderEvaluator.FormatScores(result, etype));
+            var scores = SpiderEvaluator.FormatScores(result, etype);
+            
+            Console.Write(scores);
+
+            var resultFile = options.GetValueOrDefault("result", "eval_result_example.txt");
+            File.WriteAllText(resultFile, scores);
             return 0;
         }
     }
