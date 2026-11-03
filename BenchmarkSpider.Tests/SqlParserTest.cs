@@ -65,7 +65,7 @@ public sealed class SqlParserTest
     //[TestMethod]
     //public void Tokenize_DevJson()
     //{
-    //    List<SpiderExample> examples = SpiderParser.Load(SpiderParser.DevJsonPath);
+    //    List<SpiderExample> examples = SpiderParser.Load(SpiderParser.SpiderDevJsonPath);
     //
     //    var failures = new List<string>();
     //    foreach (var example in examples)
@@ -149,8 +149,8 @@ public sealed class SqlParserTest
     [TestMethod]
     public void GetSql_DevJson_MatchesSpiderParsedSql()
     {
-        var dbs = SpiderTablesParser.LoadByDbId(SpiderTablesParser.TablesJsonPath);
-        List<SpiderExample> examples = SpiderParser.Load(SpiderParser.DevJsonPath);
+        var dbs = SpiderTablesParser.LoadByDbId(SpiderTablesParser.SpiderTablesJsonPath);
+        List<SpiderExample> examples = SpiderParser.Load(SpiderParser.SpiderDevJsonPath);
         var failures = new List<string>();
 
         foreach (var example in examples)
@@ -177,8 +177,8 @@ public sealed class SqlParserTest
     [TestMethod]
     public void GetSql_TrainSpiderJson_MatchesSpiderParsedSql()
     {
-        var dbs = SpiderTablesParser.LoadByDbId(SpiderTablesParser.TablesJsonPath);
-        List<SpiderExample> examples = SpiderParser.Load(SpiderParser.TrainSpiderJsonPath);
+        var dbs = SpiderTablesParser.LoadByDbId(SpiderTablesParser.SpiderTablesJsonPath);
+        List<SpiderExample> examples = SpiderParser.Load(SpiderParser.SpiderTrainJsonPath);
         var failures = new List<string>();
 
         foreach (var example in examples)
@@ -205,8 +205,8 @@ public sealed class SqlParserTest
     [TestMethod]
     public void GetSql_TrainOthersJson_MatchesSpiderParsedSql()
     {
-        var dbs = SpiderTablesParser.LoadByDbId(SpiderTablesParser.TablesJsonPath);
-        List<SpiderExample> examples = SpiderParser.Load(SpiderParser.TrainOthersJsonPath);
+        var dbs = SpiderTablesParser.LoadByDbId(SpiderTablesParser.SpiderTablesJsonPath);
+        List<SpiderExample> examples = SpiderParser.Load(SpiderParser.SpiderTrainOthersJsonPath);
         var failures = new List<string>();
 
         foreach (var example in examples)
@@ -320,7 +320,7 @@ public sealed class SqlParserTest
     [TestMethod]
     public void TestGetSql_DevGold()
     {
-        var dbs = SpiderTablesParser.LoadByDbId(SpiderTablesParser.TablesJsonPath);
+        var dbs = SpiderTablesParser.LoadByDbId(SpiderTablesParser.SpiderTablesJsonPath);
 
         List<SpiderGoldEntry> goldList = SpiderGoldParser.Load(Path.Combine(SpiderParser.SpiderDirectory, "dev_gold.sql"));
         foreach (var gold in goldList)
@@ -334,7 +334,7 @@ public sealed class SqlParserTest
     [TestMethod]
     public void TestGetSql_TrainGold()
     {
-        var dbs = SpiderTablesParser.LoadByDbId(SpiderTablesParser.TablesJsonPath);
+        var dbs = SpiderTablesParser.LoadByDbId(SpiderTablesParser.SpiderTablesJsonPath);
 
         List<SpiderGoldEntry> goldList = SpiderGoldParser.Load(Path.Combine(SpiderParser.SpiderDirectory, "train_gold.sql"));
         var failures = new List<string>();

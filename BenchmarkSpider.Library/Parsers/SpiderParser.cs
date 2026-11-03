@@ -12,10 +12,11 @@ namespace BenchmarkSpider.Library.Parsers;
 /// et accepter les nombres fournis sous forme de chaînes.</remarks>
 public static class SpiderParser
 {
-    public const string LibraryRootPath = @"C:\CodeGithubPerso\BenchmarkSpider\BenchmarkSpider.Library";
-    public const string DevJsonPath = LibraryRootPath + @"\spider\dev.json";
-    public const string TrainSpiderJsonPath = LibraryRootPath + @"\spider\train_spider.json";
-    public const string TrainOthersJsonPath = LibraryRootPath + @"\spider\train_others.json";
+    public const string SpiderRootPath = @"C:\CodeGithubPerso\BenchmarkSpider\BenchmarkSpider.Library";
+    public const string SpiderDevJsonPath = SpiderRootPath + @"\spider\dev.json";
+    public const string SpiderTrainJsonPath = SpiderRootPath + @"\spider\train_spider.json";
+    public const string SpiderTrainOthersJsonPath = SpiderRootPath + @"\spider\train_others.json";
+
 
     private static readonly JsonSerializerOptions Options = new()
     {
@@ -26,7 +27,7 @@ public static class SpiderParser
     /// <summary>
     /// Obtient le chemin du répertoire "spider" contenant les fichiers JSON et les bases de données.
     /// </summary>
-    public static string SpiderDirectory { get; } = Path.GetDirectoryName(DevJsonPath)!;
+    public static string SpiderDirectory { get; } = Path.GetDirectoryName(SpiderDevJsonPath)!;
 
     /// <summary>
     /// Charge une liste de `SpiderExample` à partir d’un fichier JSON.

@@ -18,8 +18,8 @@ namespace BenchmarkSpider.ParseRawJson
         /// <param name="args">[sql_path] [table_file] [output_file], tous optionnels.</param>
         static int Main(string[] args)
         {
-            var sqlPath = args.Length > 0 ? args[0] : SpiderParser.TrainSpiderJsonPath;
-            var tableFile = args.Length > 1 ? args[1] : SpiderTablesParser.TablesJsonPath;
+            var sqlPath = args.Length > 0 ? args[0] : SpiderParser.SpiderTrainJsonPath;
+            var tableFile = args.Length > 1 ? args[1] : SpiderTablesParser.SpiderTablesJsonPath;
             var outputFile = args.Length > 2 ? args[2] : "dev_new.json";
 
             var dbs = SpiderTablesParser.LoadByDbId(tableFile);

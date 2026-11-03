@@ -7,7 +7,7 @@ public sealed class SpiderEvaluatorTest
 {
     private static string DbDir()
     {
-        var dbDir = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(SpiderTablesParser.TablesJsonPath)!, "database"));
+        var dbDir = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(SpiderTablesParser.SpiderTablesJsonPath)!, "database"));
         Assert.IsTrue(Directory.Exists(dbDir), dbDir);
         return dbDir;
     }
@@ -15,8 +15,8 @@ public sealed class SpiderEvaluatorTest
     [TestMethod]
     public void Evaluate_DevGoldAgainstItself_IsPerfectExactMatch()
     {
-        var dbs = SpiderTablesParser.LoadByDbId(SpiderTablesParser.TablesJsonPath);
-        var examples = SpiderParser.Load(SpiderParser.DevJsonPath);
+        var dbs = SpiderTablesParser.LoadByDbId(SpiderTablesParser.SpiderTablesJsonPath);
+        var examples = SpiderParser.Load(SpiderParser.SpiderDevJsonPath);
 
         var items = examples.Select(e => (e.Query, e.Query, e.DbId));
         var result = SpiderEvaluator.Evaluate(items, dbs, DbDir());
@@ -29,7 +29,7 @@ public sealed class SpiderEvaluatorTest
     [TestMethod]
     public void Evaluate_DifferentWhere_IsNotExactMatch()
     {
-        var dbs = SpiderTablesParser.LoadByDbId(SpiderTablesParser.TablesJsonPath);
+        var dbs = SpiderTablesParser.LoadByDbId(SpiderTablesParser.SpiderTablesJsonPath);
         var db = dbs.Values.First(d => d.TableNamesOriginal.Count > 0);
         var table = db.TableNamesOriginal[0];
         var col = db.GetColumns(0).First().Name;
@@ -47,7 +47,7 @@ public sealed class SpiderEvaluatorTest
     [TestMethod]
     public void Evaluate_ExecutionAccuracy_ConcertSinger()
     {
-        var dbs = SpiderTablesParser.LoadByDbId(SpiderTablesParser.TablesJsonPath);
+        var dbs = SpiderTablesParser.LoadByDbId(SpiderTablesParser.SpiderTablesJsonPath);
         var dbDir = DbDir();
 
         var items = new[]
@@ -63,7 +63,7 @@ public sealed class SpiderEvaluatorTest
     [TestMethod]
     public void Evaluate_InvalidPrediction_CountsAsError()
     {
-        var dbs = SpiderTablesParser.LoadByDbId(SpiderTablesParser.TablesJsonPath);
+        var dbs = SpiderTablesParser.LoadByDbId(SpiderTablesParser.SpiderTablesJsonPath);
         var db = dbs.Values.First(d => d.TableNamesOriginal.Count > 0);
         var table = db.TableNamesOriginal[0];
 

@@ -34,7 +34,7 @@ public sealed class SpiderGoldParserTest
     public void Load_DevGold_MatchesDevJson()
     {
         var gold = SpiderGoldParser.Load(Path.Combine(SpiderParser.SpiderDirectory, "dev_gold.sql"));
-        var examples = SpiderParser.Load(SpiderParser.DevJsonPath);
+        var examples = SpiderParser.Load(SpiderParser.SpiderDevJsonPath);
 
         Assert.HasCount(examples.Count, gold);
         for (var i = 0; i < gold.Count; i++)
@@ -63,8 +63,8 @@ public sealed class SpiderGoldParserTest
     [TestMethod]
     public void MatchGold_TrainFiles_EveryExampleHasGold()
     {
-        var examples = SpiderParser.Load(SpiderParser.TrainSpiderJsonPath)
-            .Concat(SpiderParser.Load(SpiderParser.TrainOthersJsonPath))
+        var examples = SpiderParser.Load(SpiderParser.SpiderTrainJsonPath)
+            .Concat(SpiderParser.Load(SpiderParser.SpiderTrainOthersJsonPath))
             .ToList();
 
         var matches = SpiderGoldParser.MatchGold(examples, Path.Combine(SpiderParser.SpiderDirectory, "train_gold.sql"));

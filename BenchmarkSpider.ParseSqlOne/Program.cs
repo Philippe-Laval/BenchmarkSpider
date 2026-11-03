@@ -12,7 +12,7 @@ namespace BenchmarkSpider.ParseSqlOne
         {
             var sql = args.Length > 0 ? args[0] : "SELECT name ,  country ,  age FROM singer ORDER BY age DESC";
             var dbId = args.Length > 1 ? args[1] : "concert_singer";
-            var tableFile = args.Length > 2 ? args[2] : SpiderTablesParser.TablesJsonPath;
+            var tableFile = args.Length > 2 ? args[2] : SpiderTablesParser.SpiderTablesJsonPath;
 
             var dbs = SpiderTablesParser.LoadByDbId(tableFile);
             if (!dbs.TryGetValue(dbId, out SpiderDatabase? db))

@@ -95,7 +95,12 @@ public class SpiderDatabase
 /// identifiant de base de données.</remarks>
 public static class SpiderTablesParser
 {
-    public static string TablesJsonPath => Path.Combine(SpiderParser.SpiderDirectory, "tables.json");
+    public static string SpiderTablesJsonPath => Path.Combine(SpiderParser.SpiderDirectory, "tables.json");
+
+    public const string BirdRootPath = @"C:\CodeGithubPerso\BenchmarkSpider\BenchmarkBird.Library\bird";
+    public const string BirdDevTablesJsonPath = BirdRootPath + @"\dev\dev_tables.json";
+    public const string BirdTrainTablesJsonPath = BirdRootPath + @"\train\train_tables.json";
+
 
     /// <summary>
     /// Charge une liste de bases de données SPIDER depuis un fichier JSON (tables.json).

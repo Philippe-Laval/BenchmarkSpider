@@ -159,7 +159,7 @@ public sealed class SpiderParserTest
     [TestMethod]
     public void TestLoad_DevJson()
     {
-        var examples = SpiderParser.Load(SpiderParser.DevJsonPath);
+        var examples = SpiderParser.Load(SpiderParser.SpiderDevJsonPath);
 
         // Il y a 1034 exemples dans dev.json.
         Assert.HasCount(1034, examples);
@@ -172,7 +172,7 @@ public sealed class SpiderParserTest
     [TestMethod]
     public void TestLoad_TrainSpiderJson()
     {
-        var examples = SpiderParser.Load(SpiderParser.TrainSpiderJsonPath);
+        var examples = SpiderParser.Load(SpiderParser.SpiderTrainJsonPath);
 
         // Il y a 7000 exemples dans train_spider.json, mais certains sont des doublons de train_others.json.
         Assert.HasCount(7000, examples);
@@ -182,7 +182,7 @@ public sealed class SpiderParserTest
     [TestMethod]
     public void TestLoad_TrainOthersJson()
     {
-        var examples = SpiderParser.Load(SpiderParser.TrainOthersJsonPath);
+        var examples = SpiderParser.Load(SpiderParser.SpiderTrainOthersJsonPath);
 
         // Il y a 1659 exemples dans train_others.json, mais certains sont des doublons de train_spider.json.
         // Le nombre exact d'exemples uniques est donc inférieur à 1659.
@@ -193,7 +193,7 @@ public sealed class SpiderParserTest
     [TestMethod]
     public void TestLoad_DevJson_QueriesMatchGoldSql()
     {
-        var examples = SpiderParser.Load(SpiderParser.DevJsonPath);
+        var examples = SpiderParser.Load(SpiderParser.SpiderDevJsonPath);
         var gold = File.ReadAllLines(Path.Combine(SpiderParser.SpiderDirectory, "dev_gold.sql"))
             .Where(l => !string.IsNullOrWhiteSpace(l))
             .Select(l => l.Split('\t')[0].Trim())

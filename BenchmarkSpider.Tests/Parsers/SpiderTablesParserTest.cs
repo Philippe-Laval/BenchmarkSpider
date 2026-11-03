@@ -66,7 +66,7 @@ public sealed class SpiderTablesParserTest
     [TestMethod]
     public void Load_TablesJson_IsConsistent()
     {
-        var dbs = SpiderTablesParser.Load(SpiderTablesParser.TablesJsonPath);
+        var dbs = SpiderTablesParser.Load(SpiderTablesParser.SpiderTablesJsonPath);
 
         Assert.HasCount(166, dbs);
         Assert.HasCount(dbs.Count, dbs.Select(d => d.DbId).Distinct().ToList());
@@ -85,10 +85,10 @@ public sealed class SpiderTablesParserTest
     [TestMethod]
     public void Load_TablesJson_CoversAllDbIdsOfExamples()
     {
-        var known = SpiderTablesParser.LoadByDbId(SpiderTablesParser.TablesJsonPath);
-        var examples = SpiderParser.Load(SpiderParser.DevJsonPath)
-            .Concat(SpiderParser.Load(SpiderParser.TrainSpiderJsonPath))
-            .Concat(SpiderParser.Load(SpiderParser.TrainOthersJsonPath));
+        var known = SpiderTablesParser.LoadByDbId(SpiderTablesParser.SpiderTablesJsonPath);
+        var examples = SpiderParser.Load(SpiderParser.SpiderDevJsonPath)
+            .Concat(SpiderParser.Load(SpiderParser.SpiderTrainJsonPath))
+            .Concat(SpiderParser.Load(SpiderParser.SpiderTrainOthersJsonPath));
 
         var missing = examples.Select(e => e.DbId).Distinct().Where(id => !known.ContainsKey(id)).ToList();
 
@@ -98,7 +98,7 @@ public sealed class SpiderTablesParserTest
     [TestMethod]
     public void CompareFiles_WithSameFiles()
     {
-        string path = SpiderTablesParser.TablesJsonPath;
+        string path = SpiderTablesParser.SpiderTablesJsonPath;
         Assert.IsTrue(SpiderTablesParser.CompareFiles(path, path));
     }
 
@@ -110,7 +110,7 @@ public sealed class SpiderTablesParserTest
 
         var inputDir = SpiderTablesGenerator.SpiderDatabasePath;
         var outputFile = Path.Combine(tempPath, "output.json");
-        var exTabFile = SpiderTablesParser.TablesJsonPath;
+        var exTabFile = SpiderTablesParser.SpiderTablesJsonPath;
 
         if (File.Exists(outputFile))
         {
@@ -120,7 +120,7 @@ public sealed class SpiderTablesParserTest
         int result = SpiderTablesGenerator.GenerateTablesJson(inputDir, outputFile, exTabFile);
         Assert.AreEqual(0, result, "GenerateTablesJson should return 0 for success.");
 
-        string path = SpiderTablesParser.TablesJsonPath;
+        string path = SpiderTablesParser.SpiderTablesJsonPath;
         Assert.IsTrue(SpiderTablesParser.CompareFiles(path, outputFile));
 
         if (File.Exists(outputFile))

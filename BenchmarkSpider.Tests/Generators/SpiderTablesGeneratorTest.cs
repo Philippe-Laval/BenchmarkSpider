@@ -16,7 +16,7 @@ namespace BenchmarkSpider.Library.Tests.Generators
 
             var inputDir = SpiderTablesGenerator.SpiderDatabasePath;
             var outputFile = Path.Combine(tempPath, "output.json");
-            var exTabFile = SpiderTablesParser.TablesJsonPath;
+            var exTabFile = SpiderTablesParser.SpiderTablesJsonPath;
 
             if (File.Exists(outputFile))
             {
