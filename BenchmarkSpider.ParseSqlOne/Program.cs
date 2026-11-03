@@ -2,6 +2,8 @@ using System.Text.Json;
 using BenchmarkSpider.Library;
 using BenchmarkSpider.Library.Parsers;
 
+// Port of : https://github.com/taoyds/spider/blob/master/preprocess/parse_sql_one.py
+
 namespace BenchmarkSpider.ParseSqlOne
 {
     internal class Program

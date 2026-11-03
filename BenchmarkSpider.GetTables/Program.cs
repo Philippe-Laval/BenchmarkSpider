@@ -5,6 +5,8 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
+// Port of : https://github.com/taoyds/spider/blob/master/preprocess/get_tables.py
+
 // "C:\CodeGithubPerso\BenchmarkSpider\BenchmarkSpider.Library\spider\database" "C:\temp\output.json" "C:\CodeGithubPerso\BenchmarkSpider\BenchmarkSpider.Library\spider\tables.json"
 
 namespace BenchmarkSpider.GetTables
