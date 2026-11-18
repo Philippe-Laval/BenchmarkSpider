@@ -129,4 +129,18 @@ public sealed class SpiderTablesParserTest
         }
     }
 
+    [TestMethod]
+    public void LoadBirdFiles()
+    {
+        Assert.IsTrue(File.Exists(SpiderTablesParser.BirdDevTablesJsonPath), $"File not found: {SpiderTablesParser.BirdDevTablesJsonPath}");
+        Assert.IsTrue(File.Exists(SpiderTablesParser.BirdTrainTablesJsonPath), $"File not found: {SpiderTablesParser.BirdTrainTablesJsonPath}");
+
+        var db1s = SpiderTablesParser.Load(SpiderTablesParser.BirdDevTablesJsonPath);
+        Assert.IsNotNull(db1s, "Failed to load BirdDevTablesJsonPath");
+
+        var db2s = SpiderTablesParser.Load(SpiderTablesParser.BirdTrainTablesJsonPath);
+        Assert.IsNotNull(db2s, "Failed to load BirdTrainTablesJsonPath");
+    }
+
+
 }
