@@ -7,10 +7,10 @@ namespace BenchmarkBird.Library.Parsers
     /// <summary>Charge les jeux de données BIRD depuis des fichiers JSON.</summary>
     public class BirdParser
     {
-        public const string LibraryRootPath = @"C:\CodeGithubPerso\BenchmarkSpider\BenchmarkBird.Library";
-        public const string DevBirdJsonPath = LibraryRootPath + @"\bird\dev\dev.json";
-        public const string TrainOthersJsonPath = LibraryRootPath + @"\bird\dev\dev_tied_append.json";
-        public const string TrainBirdJsonPath = LibraryRootPath + @"\bird\train\train.json";
+        public const string BirdRootPath = @"C:\CodeGithubPerso\BenchmarkSpider\BenchmarkBird.Library";
+        public const string BirdDevJsonPath = BirdRootPath + @"\bird\dev\dev.json";
+        public const string BirdDevOthersJsonPath = BirdRootPath + @"\bird\dev\dev_tied_append.json";
+        public const string BirdTrainJsonPath = BirdRootPath + @"\bird\train\train.json";
 
 
         private static readonly JsonSerializerOptions Options = new()
