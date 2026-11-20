@@ -51,7 +51,7 @@ public class SpiderExample
 
     /// <summary>
     /// Parsed results of this SQL query using process_sql.py. 
-    /// Please refer to parsed_sql_examples.sql in thepreprocess directory for the detailed documentation.
+    /// Please refer to parsed_sql_examples.sql in the preprocess directory for the detailed documentation.
     /// </summary>
     [JsonPropertyName("sql")]
     public SpiderSql? Sql { get; set; }
