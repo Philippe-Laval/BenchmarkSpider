@@ -11,6 +11,9 @@ namespace BenchmarkBird.Library.Models
         [JsonPropertyName("db_id")]
         public string DbId { get; set; } = string.Empty;
 
+        /// <summary>
+        /// Question en language naturel
+        /// </summary>
         [JsonPropertyName("question")]
         public string Question { get; set; } = string.Empty;
 
@@ -18,6 +21,9 @@ namespace BenchmarkBird.Library.Models
         [JsonPropertyName("evidence")]
         public string Evidence { get; set; } = string.Empty;
 
+        /// <summary>
+        /// Gold SQL query corresponding to the question
+        /// </summary>
         [JsonPropertyName("SQL")]
         public string Sql { get; set; } = string.Empty;
 
