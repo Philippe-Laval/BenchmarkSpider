@@ -2,8 +2,13 @@
     
 namespace BenchmarkSpider.Evaluate
 {
-    // Exemple de ligne de commande :
+    // Exemple de ligne de commande (fichiers de Spider du projets en python) :
     // --gold "C:\CodeGithubPerso\BenchmarkSpider\BenchmarkSpider\evaluation_examples\gold_example.sql" --pred "C:\CodeGithubPerso\BenchmarkSpider\BenchmarkSpider\evaluation_examples\pred_example.sql" --db "C:\CodeGithubPerso\BenchmarkSpider\BenchmarkSpider.Library\spider\database" --table "C:\CodeGithubPerso\BenchmarkSpider\BenchmarkSpider.Library\spider\tables.json" --etype all
+
+    // Exemple de ligne de commande pour évaluer tous les fichiers gold/pred dans un dossier "C:\temp\Spider_Results" :
+    // --gold "C:\temp\Spider_Results\gold.sql" --pred "C:\temp\Spider_Results\pred.sql" --db "C:\CodeGithubPerso\BenchmarkSpider\BenchmarkSpider.Library\spider\database" --table "C:\CodeGithubPerso\BenchmarkSpider\BenchmarkSpider.Library\spider\tables.json" --etype all
+
+    // 
 
     internal class Program
     {
